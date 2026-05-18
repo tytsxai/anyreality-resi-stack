@@ -8,6 +8,11 @@
 [![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-orange.svg)](#)
 [![sing-box](https://img.shields.io/badge/core-sing--box-purple.svg)](https://sing-box.sagernet.org)
 [![VLESS Reality](https://img.shields.io/badge/protocol-VLESS%2BReality-green.svg)](#)
+[![Release](https://img.shields.io/github/v/release/tytsxai/reality-resi-stack)](https://github.com/tytsxai/reality-resi-stack/releases)
+
+[Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/reality-resi-stack/issues)
+
+> **Keywords**: residential IP VLESS · sing-box residential installer · OpenAI 住宅 IP · ChatGPT 住宅 IP 出口 · Telegram 住宅 IP 卡顿 · Discord 住宅 IP 降权 · Netflix 住宅 IP · VLESS+Reality 一键脚本 · 双节点智能分流 · Clash 域名分流 · alternative to 3x-ui for residential VPS
 
 ---
 
@@ -119,6 +124,29 @@ Client downloads a *single* subscription URL from the aggregator. That URL retur
 凭证不入库；CI 强制脱敏门禁；sing-box 安装走 GPG 指纹校验。详见 [SECURITY.md](SECURITY.md)。
 
 ---
+
+## ❓ FAQ
+
+**Q: 我的 Telegram 在住宅 VPS 上文件上传卡死、"正在发送..." 一直转,怎么办?**
+Telegram 会对**历史上跑过 bot 的住宅 IP 段**做软降权。打开本仓库的**双节点模式**,把 `geosite:telegram` 通过数据中心备用节点出去,问题立刻解决。
+
+**Q: OpenAI / ChatGPT 在数据中心 VPS 上提示 "unsupported region",换住宅 VPS 就好了 —— 但 Telegram 又变慢。怎么两个都顾?**
+这就是这个项目存在的全部理由:**OpenAI / Anthropic / 银行 / Netflix 走住宅出口,Telegram / Discord 走数据中心节点**,客户端只看到一份订阅。
+
+**Q: Reality 协议需要域名和证书吗?**
+不需要,这是它相对 Trojan / V2Ray-TLS 的最大优势。默认伪装 SNI 是 `addons.mozilla.org`,你可以换成任何高信誉域名。
+
+**Q: 安装脚本能重复运行吗?会不会把 UUID 和 Reality 密钥洗掉?**
+脚本是**幂等的**,重跑既不会改 UUID 也不会重新生成 Reality 密钥。每天 systemd-timer 还会自动备份 sing-box 配置。
+
+**Q: 为什么强制 Ubuntu 22.04+ / Debian 12+?CentOS 7 / Alpine 行不行?**
+不行 —— BBR、journald 限额、sing-box apt 源、GPG 指纹校验都是基于现代 systemd + apt 的。这是有意限制,降低兼容性矩阵换稳定性。
+
+**Q: 这工具和 3x-ui / x-ui / XHTTP-Installer 有什么区别?**
+那些是为「便宜 VPS 翻墙」设计的(多用户、面板、隐藏出口 IP)。本项目是为**住宅 IP VPS 是资产**这个完全相反的前提设计的 —— 默认单 UUID、不藏 IP、按域名把对住宅 IP 不友好的少数服务旁路掉。
+
+**Q: GPL-3.0 协议,我能用在闭源公司项目里吗?**
+不能,需要开源到 GPL-3.0,或者和 sing-box 社区/作者协商商业许可。
 
 ## 🤝 Contributing | 贡献
 
