@@ -84,13 +84,13 @@ journalctl -u subscription-leaf -n 50 --no-pager
 
 **Short answer:** expected behavior, not a bug.
 
-**Long answer:** the subscription server counts `/sys/class/net/<iface>/statistics/rx_bytes + tx_bytes` monthly delta. Providers may bill on:
+**Long answer:** the subscription server counts `/sys/class/net/<iface>/statistics/rx_bytes + tx_bytes` over the configured billing period. Providers may bill on:
 
 - Outbound only (your `tx_bytes`, not `rx + tx`)
 - 95th-percentile (not accumulation)
 - 5-minute peaks
 - Adding control-plane traffic (DHCP / ARP / your own SSH session bytes)
-- A "month" starting at a different timestamp than yours
+- A billing period starting on a provider-specific day such as the 11th
 
 **Calibrate** (align the card to match the dashboard from this moment on):
 
@@ -104,7 +104,13 @@ sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/realit
 sudo systemctl restart subscription-leaf
 ```
 
-If `usage-state.json` does not exist yet or was cleared during restore, hit `http://127.0.0.1/<TOKEN>/status` once to establish the baseline, then apply the formula above. `USAGE_OFFSET_BYTES` may be negative; the server clamps the final reported value to zero or above.
+If your provider resets traffic on a non-first day of the month, also set `BILLING_CYCLE_DAY` before calibrating:
+
+```bash
+sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/reality-resi-stack/subscription-leaf.env
+```
+
+If `usage-state.json` does not exist yet or was cleared during restore, the leaf now creates state on the next background poll or status request. `USAGE_OFFSET_BYTES` may be negative; the server clamps the final reported value to zero or above.
 
 ---
 

@@ -43,6 +43,9 @@
 | `INTERFACE` | `eth0` | 主网卡名，留空让脚本自动检测 |
 | `TIMEZONE` | `America/Los_Angeles` | 可选 |
 | `TOTAL_BYTES` | `1063004405760` | 套餐配额（字节），仅用于客户端流量卡片显示，留 0 隐藏 |
+| `EXPIRE_TS` | `0` | 套餐到期 Unix 时间戳，`0` 表示不显示 |
+| `BILLING_CYCLE_DAY` | `1` | 商家流量重置日；每月 11 号重置就填 `11` |
+| `USAGE_POLL_INTERVAL_SECONDS` | `60` | 后台流量采样间隔 |
 | `WITH_SUBSCRIPTION` | `1` | 是否安装订阅服务（推荐） |
 | `WITH_AGGREGATOR` | `0` | 是否安装聚合模式（双节点才用） |
 | `HARDEN_SSH` | `0` | 是否启用 SSH key-only + 改端口（默认关，避免锁服） |
@@ -88,6 +91,9 @@ INBOUND_PORT=443
 INTERFACE=eth0
 TIMEZONE=America/Los_Angeles
 TOTAL_BYTES=1063004405760
+EXPIRE_TS=0
+BILLING_CYCLE_DAY=1
+USAGE_POLL_INTERVAL_SECONDS=60
 WITH_SUBSCRIPTION=1
 EOF
 

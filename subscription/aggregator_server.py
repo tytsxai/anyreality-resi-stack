@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -36,6 +37,9 @@ DEFAULT_TARGET = os.environ.get("DEFAULT_TARGET", "profile.yaml")
 CACHE_FILE = Path(os.environ.get(
     "CACHE_FILE", "/var/lib/reality-resi-stack/usage-cache.json"))
 CACHE_TTL_SECONDS = float(os.environ.get("CACHE_TTL_SECONDS", "60"))
+REMOTE_POLL_INTERVAL_SECONDS = float(
+    os.environ.get("REMOTE_POLL_INTERVAL_SECONDS", CACHE_TTL_SECONDS)
+)
 TOTAL_BYTES = int(os.environ.get("TOTAL_BYTES", "0"))
 FALLBACK_USED_BYTES = int(os.environ.get("FALLBACK_USED_BYTES", "0"))
 EXPIRE_TS = int(os.environ.get("EXPIRE_TS", "0"))
@@ -106,6 +110,27 @@ def current_usage() -> tuple[int, dict]:
         save_usage_cache(reported, status)
         return reported, {"source": "remote_status", "remote_status": status}
     except Exception as exc:  # noqa: BLE001
+        if cached is not None:
+            cached_used, cached_payload = cached
+            return cached_used, {
+                "source": "cache-stale-fallback",
+                "error": str(exc),
+                "cache": cached_payload,
+            }
+        return max(0, FALLBACK_USED_BYTES), {"source": "fallback", "error": str(exc)}
+
+
+def refresh_usage_cache() -> tuple[int, dict]:
+    """Poll the leaf and refresh cache, ignoring cache freshness."""
+    try:
+        status = read_remote_status()
+        reported = int(status.get("reported_used_bytes",
+                                  status.get("used_bytes", FALLBACK_USED_BYTES)))
+        reported = max(0, reported)
+        save_usage_cache(reported, status)
+        return reported, {"source": "remote_status", "remote_status": status}
+    except Exception as exc:  # noqa: BLE001
+        cached = read_usage_cache()
         if cached is not None:
             cached_used, cached_payload = cached
             return cached_used, {
@@ -197,6 +222,7 @@ class AggregatorHandler(BaseHTTPRequestHandler):
         payload = json.dumps(
             {
                 "expire_ts": EXPIRE_TS,
+                "poll_interval_seconds": REMOTE_POLL_INTERVAL_SECONDS,
                 "profile_title": PROFILE_TITLE,
                 "reported_used_bytes": used_bytes,
                 "total_bytes": TOTAL_BYTES,
@@ -217,9 +243,21 @@ class AggregatorHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    start_remote_polling()
     server = ThreadingHTTPServer((HOST, PORT), AggregatorHandler)
     print(f"listening on {HOST}:{PORT}", flush=True)
     server.serve_forever()
+
+
+def remote_poll_loop() -> None:
+    while True:
+        refresh_usage_cache()
+        time.sleep(max(5, REMOTE_POLL_INTERVAL_SECONDS))
+
+
+def start_remote_polling() -> None:
+    thread = threading.Thread(target=remote_poll_loop, name="remote-status-poll", daemon=True)
+    thread.start()
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ Existing tools (3x-ui, Sub-Hub, Sub-Store) either pull in a full admin panel or 
 
 | Server | File | Where it runs |
 |---|---|---|
-| **Leaf** | `subscription/leaf_server.py` | On every host running sing-box. Reads `/sys/class/net/<iface>/statistics/*_bytes`, accumulates monthly traffic, and emits `Subscription-Userinfo`. |
+| **Leaf** | `subscription/leaf_server.py` | On every host running sing-box. Reads `/sys/class/net/<iface>/statistics/*_bytes`, accumulates billing-period traffic, and emits `Subscription-Userinfo`. |
 | **Aggregator** | `subscription/aggregator_server.py` | On the data-center backup node in a dual-node setup. **Polls** the leaf's `/<TOKEN>/status` JSON, **caches** the result, and serves a unified Clash YAML listing both nodes. Falls back to the cache when the leaf is briefly unreachable. |
 
 Single-node deployments run only the leaf. Dual-node deployments run both.
@@ -60,8 +60,11 @@ Full reference in `templates/env/subscription-leaf.env.example` and `subscriptio
 | `TOKEN` | ✓ | URL path prefix; the server only answers requests under `/<TOKEN>/` |
 | `INTERFACE` | ✓ | NIC name, used to read `rx_bytes` / `tx_bytes` |
 | `FILE_DIR` | | Directory of profile files (default `/etc/reality-resi-stack/files`) |
-| `STATE_FILE` | | Persistent monthly counter |
+| `STATE_FILE` | | Persistent billing-period counter |
 | `USAGE_OFFSET_BYTES` | | Calibration baseline (use this when the counter starts mid-month) |
+| `BILLING_CYCLE_DAY` | | Provider reset day, default `1` for calendar months |
+| `USAGE_POLL_INTERVAL_SECONDS` | | Background sampling interval, default `60` |
+| `COUNT_CURRENT_BOOT_ON_INIT` | | Count bytes already present in this boot on first state creation, default `true` |
 | `TOTAL_BYTES` | | Plan quota (display only) |
 | `EXPIRE_TS` | | Plan expiry Unix timestamp; `0` hides it |
 
@@ -73,20 +76,22 @@ Full reference in `templates/env/subscription-leaf.env.example` and `subscriptio
 | `REMOTE_STATUS_URL` | ✓ | The leaf's `/status` URL, fetched on every poll |
 | `CACHE_FILE` | | Last-known-good remote status |
 | `CACHE_TTL_SECONDS` | | Cache freshness window (default 60) |
+| `REMOTE_POLL_INTERVAL_SECONDS` | | Background leaf polling interval (default follows `CACHE_TTL_SECONDS`) |
 | `FALLBACK_USED_BYTES` | | Fallback when neither cache nor leaf is available |
 
 ---
 
 ## Semantics of the traffic counter
 
-**The leaf counts the host's monthly NIC RX+TX:**
+**The leaf counts the host's billing-period NIC RX+TX:**
 
 ```
 read /sys/class/net/<INTERFACE>/statistics/rx_bytes
 read /sys/class/net/<INTERFACE>/statistics/tx_bytes
-accumulate by month, reset on month change
-first sample establishes a baseline instead of counting pre-install host traffic
-detect reboots via boot_id — add the new boot's current counter into monthly usage
+sample in the background every USAGE_POLL_INTERVAL_SECONDS
+accumulate by provider billing period, reset on BILLING_CYCLE_DAY
+first sample counts current-boot bytes by default, or set COUNT_CURRENT_BOOT_ON_INIT=false for baseline-only mode
+detect reboots via boot_id — add the new boot's current counter into period usage
 add USAGE_OFFSET_BYTES before returning to clients (manual calibration)
 ```
 
@@ -97,7 +102,7 @@ The honest bounds of this:
 ❌ **Not the same as your VPS provider's billing**. Providers may bill on 95th-percentile, on outbound only, on 5-minute peaks — entirely different units.
 ❌ If the host runs other workloads (a personal web server, backups), that non-proxy traffic is included too.
 
-When the provider dashboard is much higher than the subscription card, the usual cause is "the subscription server started later than the month did." The first sample is also intentionally treated as a baseline so pre-install host traffic is not dumped into the card. Apply a `USAGE_OFFSET_BYTES` to catch up (see [TROUBLESHOOTING.md](TROUBLESHOOTING.md), "Traffic counter drifts" section).
+When the provider dashboard is much higher than the subscription card, the usual cause is "the subscription server started later than the billing period did" or the provider's reset day is not the first day of the month. Set `BILLING_CYCLE_DAY` to the provider reset day, then apply a `USAGE_OFFSET_BYTES` to catch up if needed (see [TROUBLESHOOTING.md](TROUBLESHOOTING.md), "Traffic counter drifts" section).
 
 ---
 
@@ -109,6 +114,10 @@ When the provider dashboard is much higher than the subscription card, the usual
 2. **Cache stale or missing** → pull from leaf, refresh cache
 3. **Leaf unreachable** → use the last cached value (even if stale)
 4. **No cache either** → fall back to `FALLBACK_USED_BYTES`
+
+The aggregator also refreshes the leaf cache in the background every
+`REMOTE_POLL_INTERVAL_SECONDS` seconds, so the card remains warm even when no
+client is pulling the subscription URL.
 
 Why: clients refresh on `Profile-Update-Interval` (default 24 h). If the leaf is mid-restart at that moment, **returning 0 would yank the client's usage card back to zero** until the next refresh — a jarring visual jump that confuses users far more than "the number is slightly stale."
 

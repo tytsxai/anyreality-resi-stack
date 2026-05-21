@@ -32,6 +32,7 @@ class AggregatorCacheTest(unittest.TestCase):
         self.aggregator = load_aggregator_module()
         self.aggregator.CACHE_FILE = Path(self.tmp.name) / "usage-cache.json"
         self.aggregator.CACHE_TTL_SECONDS = 60
+        self.aggregator.REMOTE_POLL_INTERVAL_SECONDS = 60
         self.aggregator.FALLBACK_USED_BYTES = 12
 
     def set_time(self, now: int) -> None:
@@ -70,6 +71,18 @@ class AggregatorCacheTest(unittest.TestCase):
         self.assertEqual(meta["source"], "remote_status")
         cached = json.loads(self.aggregator.CACHE_FILE.read_text(encoding="utf-8"))
         self.assertEqual(cached["reported_used_bytes"], 77)
+
+    def test_poll_refreshes_cache(self) -> None:
+        self.write_cache(55, cached_at=100)
+        self.set_time(120)
+        self.aggregator.read_remote_status = lambda: {"reported_used_bytes": 88}
+
+        used, meta = self.aggregator.refresh_usage_cache()
+
+        self.assertEqual(used, 88)
+        self.assertEqual(meta["source"], "remote_status")
+        cached = json.loads(self.aggregator.CACHE_FILE.read_text(encoding="utf-8"))
+        self.assertEqual(cached["reported_used_bytes"], 88)
 
     def test_remote_failure_uses_stale_cache(self) -> None:
         self.write_cache(55, cached_at=100)

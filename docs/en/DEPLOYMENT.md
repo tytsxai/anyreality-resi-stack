@@ -43,6 +43,9 @@ Decide these before running. The installer prompts for missing values, but bundl
 | `INTERFACE` | `eth0` | Primary NIC; leave empty for auto-detection |
 | `TIMEZONE` | `America/Los_Angeles` | Optional |
 | `TOTAL_BYTES` | `1063004405760` | Plan quota in bytes (for the client usage card only); `0` hides it |
+| `EXPIRE_TS` | `0` | Plan expiry Unix timestamp; `0` hides it |
+| `BILLING_CYCLE_DAY` | `1` | Provider traffic reset day; set `11` for plans that reset on the 11th |
+| `USAGE_POLL_INTERVAL_SECONDS` | `60` | Background usage sampling interval |
 | `WITH_SUBSCRIPTION` | `1` | Install the subscription server (recommended) |
 | `WITH_AGGREGATOR` | `0` | Install in aggregator mode (dual-node only) |
 | `HARDEN_SSH` | `0` | Apply SSH key-only + port change (off by default, to avoid lockouts) |
@@ -86,6 +89,9 @@ INBOUND_PORT=443
 INTERFACE=eth0
 TIMEZONE=America/Los_Angeles
 TOTAL_BYTES=1063004405760
+EXPIRE_TS=0
+BILLING_CYCLE_DAY=1
+USAGE_POLL_INTERVAL_SECONDS=60
 WITH_SUBSCRIPTION=1
 EOF
 

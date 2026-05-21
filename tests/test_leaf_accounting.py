@@ -31,7 +31,10 @@ class LeafAccountingTest(unittest.TestCase):
         self.leaf = load_leaf_module()
         self.leaf.STATE_FILE = Path(self.tmp.name) / "usage-state.json"
         self.leaf.USAGE_OFFSET_BYTES = 0
-        self.leaf.current_month_key = lambda: "2026-05"
+        self.leaf.BILLING_CYCLE_DAY = 1
+        self.leaf.COUNT_CURRENT_BOOT_ON_INIT = True
+        self.original_current_period_key = self.leaf.current_period_key
+        self.leaf.current_period_key = lambda: "2026-05-01"
 
     def set_counter(self, total: int, boot_id: str = "boot-a") -> None:
         self.leaf.read_total_bytes = lambda: total
@@ -41,6 +44,7 @@ class LeafAccountingTest(unittest.TestCase):
         return json.loads(self.leaf.STATE_FILE.read_text(encoding="utf-8"))
 
     def test_first_sample_is_baseline(self) -> None:
+        self.leaf.COUNT_CURRENT_BOOT_ON_INIT = False
         self.set_counter(1_000)
 
         used = self.leaf.update_usage_state()
@@ -51,12 +55,21 @@ class LeafAccountingTest(unittest.TestCase):
             {
                 "boot_id": "boot-a",
                 "last_total": 1_000,
-                "month": "2026-05",
+                "period": "2026-05-01",
                 "used_bytes": 0,
             },
         )
 
+    def test_first_sample_can_count_current_boot(self) -> None:
+        self.set_counter(1_000)
+
+        used = self.leaf.update_usage_state()
+
+        self.assertEqual(used, 1_000)
+        self.assertEqual(self.read_state()["used_bytes"], 1_000)
+
     def test_same_boot_adds_positive_delta(self) -> None:
+        self.leaf.COUNT_CURRENT_BOOT_ON_INIT = False
         self.set_counter(1_000)
         self.assertEqual(self.leaf.update_usage_state(), 0)
         self.set_counter(1_400)
@@ -65,6 +78,7 @@ class LeafAccountingTest(unittest.TestCase):
         self.assertEqual(self.read_state()["used_bytes"], 400)
 
     def test_reboot_counts_current_total(self) -> None:
+        self.leaf.COUNT_CURRENT_BOOT_ON_INIT = False
         self.set_counter(1_000, "boot-a")
         self.assertEqual(self.leaf.update_usage_state(), 0)
         self.set_counter(50, "boot-b")
@@ -79,7 +93,7 @@ class LeafAccountingTest(unittest.TestCase):
                 {
                     "boot_id": "boot-a",
                     "last_total": 1_000,
-                    "month": "2026-04",
+                    "period": "2026-04-01",
                     "used_bytes": 500,
                 }
             ),
@@ -90,14 +104,30 @@ class LeafAccountingTest(unittest.TestCase):
 
         self.assertEqual(self.leaf.update_usage_state(), 0)
         self.assertEqual(self.leaf.reported_used_bytes(0), 900)
-        self.assertEqual(self.read_state()["month"], "2026-05")
+        self.assertEqual(self.read_state()["period"], "2026-05-01")
 
     def test_corrupt_state_reinitializes(self) -> None:
+        self.leaf.COUNT_CURRENT_BOOT_ON_INIT = False
         self.leaf.STATE_FILE.write_text("{not-json", encoding="utf-8")
         self.set_counter(123, "boot-a")
 
         self.assertEqual(self.leaf.update_usage_state(), 0)
         self.assertEqual(self.read_state()["last_total"], 123)
+
+    def test_custom_billing_cycle_day_period(self) -> None:
+        from datetime import datetime
+
+        self.leaf.BILLING_CYCLE_DAY = 11
+        self.leaf.current_period_key = self.original_current_period_key
+
+        self.assertEqual(
+            self.leaf.current_period_key(datetime(2026, 5, 10, 23, 59)),
+            "2026-04-11",
+        )
+        self.assertEqual(
+            self.leaf.current_period_key(datetime(2026, 5, 11, 0, 0)),
+            "2026-05-11",
+        )
 
 
 if __name__ == "__main__":

@@ -13,6 +13,8 @@
 #   --timezone TZ               e.g. America/Los_Angeles (optional)
 #   --interface NAME            NIC for traffic accounting (default: auto-detect)
 #   --total-bytes N             Plan quota for the subscription card (default: 0 = hide)
+#   --billing-cycle-day N       Provider reset day for usage accounting (default: 1)
+#   --usage-poll-interval N     Background usage sample interval seconds (default: 60)
 #   --with-subscription         Install the subscription leaf server on :80
 #   --with-aggregator URL       Install aggregator instead, polling URL for /status
 #   --harden-ssh                Apply SSH key-only + port change (read warnings!)
@@ -77,6 +79,11 @@ INTERFACE=""
 TOTAL_BYTES=0
 EXPIRE_TS=0
 USAGE_OFFSET_BYTES=0
+BILLING_CYCLE_DAY=1
+USAGE_POLL_INTERVAL_SECONDS=60
+COUNT_CURRENT_BOOT_ON_INIT=true
+CACHE_TTL_SECONDS=60
+REMOTE_POLL_INTERVAL_SECONDS=60
 WITH_SUBSCRIPTION=0
 WITH_AGGREGATOR=0
 REMOTE_STATUS_URL=""
@@ -118,6 +125,15 @@ while [[ $# -gt 0 ]]; do
       ;;
     --total-bytes)
       TOTAL_BYTES="$2"
+      shift 2
+      ;;
+    --billing-cycle-day)
+      BILLING_CYCLE_DAY="$2"
+      shift 2
+      ;;
+    --usage-poll-interval)
+      USAGE_POLL_INTERVAL_SECONDS="$2"
+      REMOTE_POLL_INTERVAL_SECONDS="$2"
       shift 2
       ;;
     --with-subscription)
@@ -199,7 +215,9 @@ if [[ -z "$SERVER_IP" ]]; then
 fi
 export SERVER_IP NODE_NAME SNI INBOUND_PORT SSH_PORT TIMEZONE INTERFACE \
   TOTAL_BYTES EXPIRE_TS USAGE_OFFSET_BYTES WITH_SUBSCRIPTION WITH_AGGREGATOR \
-  REMOTE_STATUS_URL HARDEN_SSH SINGBOX_VERSION
+  BILLING_CYCLE_DAY USAGE_POLL_INTERVAL_SECONDS COUNT_CURRENT_BOOT_ON_INIT \
+  CACHE_TTL_SECONDS REMOTE_POLL_INTERVAL_SECONDS REMOTE_STATUS_URL \
+  HARDEN_SSH SINGBOX_VERSION
 
 # ── Run phases ───────────────────────────────────────────────────────────
 phase_preflight

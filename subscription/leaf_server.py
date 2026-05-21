@@ -6,7 +6,7 @@ Serves a per-token subscription endpoint with three responsibilities:
 1.  Hand back the rendered Clash / sing-box / v2rayN profile file under
     ``/<TOKEN>/<filename>`` (or ``/<TOKEN>/`` for the default profile).
 2.  Read the kernel network-interface counters to track traffic on a
-    per-month basis and emit a ``Subscription-Userinfo`` response header so
+    per-billing-period basis and emit a ``Subscription-Userinfo`` response header so
     clients can render a usage card.
 3.  Expose ``/healthz`` (liveness) and ``/<TOKEN>/status`` (machine-readable
     usage summary) for monitoring and for aggregator nodes to poll.
@@ -20,7 +20,8 @@ import json
 import logging
 import os
 import threading
-from datetime import datetime
+import time as time_module
+from datetime import datetime, time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -38,6 +39,13 @@ STATE_FILE = Path(os.environ.get(
 TOTAL_BYTES = int(os.environ.get("TOTAL_BYTES", "0"))
 USAGE_OFFSET_BYTES = int(os.environ.get("USAGE_OFFSET_BYTES", "0"))
 EXPIRE_TS = int(os.environ.get("EXPIRE_TS", "0"))
+BILLING_CYCLE_DAY = int(os.environ.get("BILLING_CYCLE_DAY", "1"))
+USAGE_POLL_INTERVAL_SECONDS = int(os.environ.get("USAGE_POLL_INTERVAL_SECONDS", "60"))
+COUNT_CURRENT_BOOT_ON_INIT = os.environ.get("COUNT_CURRENT_BOOT_ON_INIT", "true").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 PROFILE_TITLE = os.environ.get("PROFILE_TITLE", "Reality-Residential")
 UPDATE_INTERVAL_HOURS = os.environ.get("UPDATE_INTERVAL_HOURS", "24")
 FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/reality-resi-stack/files"))
@@ -81,8 +89,37 @@ def read_boot_id() -> str:
         return "unknown"
 
 
-def current_month_key() -> str:
-    return datetime.now().strftime("%Y-%m")
+def current_period_key(now: datetime | None = None) -> str:
+    """Return the accounting period key.
+
+    BILLING_CYCLE_DAY=1 behaves like a calendar month. Other values anchor the
+    period on the provider's billing reset day, e.g. day 11 yields
+    ``2026-05-11`` for traffic between May 11 and June 10.
+    """
+    now = now or datetime.now()
+    day = min(max(BILLING_CYCLE_DAY, 1), 28)
+    year = now.year
+    month = now.month
+    if now.day < day:
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def next_billing_reset_ts(now: datetime | None = None) -> int:
+    now = now or datetime.now()
+    day = min(max(BILLING_CYCLE_DAY, 1), 28)
+    year = now.year
+    month = now.month
+    if now.day >= day:
+        month += 1
+        if month == 13:
+            month = 1
+            year += 1
+    reset_at = datetime.combine(datetime(year, month, day).date(), time.min)
+    return int(reset_at.timestamp())
 
 
 def load_state() -> dict:
@@ -103,7 +140,7 @@ def save_state(state: dict) -> None:
 
 
 def update_usage_state() -> int:
-    """Maintain a monotonically increasing monthly counter despite reboots.
+    """Maintain a monotonically increasing billing-period counter despite reboots.
 
     If the kernel stats are unavailable this round, return the last persisted
     value without modifying state — the next round will try again.
@@ -114,7 +151,7 @@ def update_usage_state() -> int:
         return int(state.get("used_bytes", 0)) if state else 0
 
     current_boot = read_boot_id()
-    month_key = current_month_key()
+    period_key = current_period_key()
 
     with state_lock:
         state = load_state()
@@ -122,17 +159,18 @@ def update_usage_state() -> int:
             state = {
                 "boot_id": current_boot,
                 "last_total": current_total,
-                "month": month_key,
-                "used_bytes": 0,
+                "period": period_key,
+                "used_bytes": current_total if COUNT_CURRENT_BOOT_ON_INIT else 0,
             }
             save_state(state)
-            return 0
+            return int(state["used_bytes"])
 
-        if state.get("month") != month_key:
+        state_period = state.get("period", state.get("month"))
+        if state_period != period_key:
             state = {
                 "boot_id": current_boot,
                 "last_total": current_total,
-                "month": month_key,
+                "period": period_key,
                 "used_bytes": 0,
             }
             save_state(state)
@@ -152,6 +190,8 @@ def update_usage_state() -> int:
 
         state["boot_id"] = current_boot
         state["last_total"] = current_total
+        state["period"] = period_key
+        state.pop("month", None)
         state["used_bytes"] = used_bytes
         save_state(state)
         return used_bytes
@@ -239,10 +279,14 @@ class SubscriptionHandler(BaseHTTPRequestHandler):
         reported_bytes = reported_used_bytes(used_bytes)
         payload = json.dumps(
             {
+                "billing_cycle_day": BILLING_CYCLE_DAY,
+                "billing_reset_ts": next_billing_reset_ts(),
                 "counter_used_bytes": used_bytes,
+                "count_current_boot_on_init": COUNT_CURRENT_BOOT_ON_INIT,
                 "expire_ts": EXPIRE_TS,
                 "interface": INTERFACE,
-                "month": current_month_key(),
+                "period": current_period_key(),
+                "poll_interval_seconds": USAGE_POLL_INTERVAL_SECONDS,
                 "profile_title": PROFILE_TITLE,
                 "reported_used_bytes": reported_bytes,
                 "total_bytes": TOTAL_BYTES,
@@ -264,9 +308,24 @@ class SubscriptionHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    start_usage_polling()
     server = ThreadingHTTPServer((HOST, PORT), SubscriptionHandler)
     print(f"listening on {HOST}:{PORT}", flush=True)
     server.serve_forever()
+
+
+def usage_poll_loop() -> None:
+    while True:
+        try:
+            update_usage_state()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("usage poll failed: %s", exc)
+        time_module.sleep(max(5, USAGE_POLL_INTERVAL_SECONDS))
+
+
+def start_usage_polling() -> None:
+    thread = threading.Thread(target=usage_poll_loop, name="usage-poll", daemon=True)
+    thread.start()
 
 
 if __name__ == "__main__":

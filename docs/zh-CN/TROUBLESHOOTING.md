@@ -84,13 +84,13 @@ journalctl -u subscription-leaf -n 50 --no-pager
 
 **短答：** 这是**预期行为**，不是 bug。
 
-**长答：** 订阅服务统计的是 `/sys/class/net/<iface>/statistics/rx_bytes + tx_bytes` 的月累计差值。商家计费可能：
+**长答：** 订阅服务统计的是 `/sys/class/net/<iface>/statistics/rx_bytes + tx_bytes` 在当前配置账期内的累计差值。商家计费可能：
 
 - 按出方向计费（你的 tx_bytes 而不是 rx + tx）
 - 按 95 百分位计费（不是累加）
 - 按五分钟峰值计费
 - 加上控制层流量（DHCP / ARP / 你自己 SSH 进去看的流量）
-- 月初零点对不上你订阅服务初次落盘的时间
+- 商家账期从特定日期开始，例如每月 11 号，而不是每月 1 号
 
 **校准方法**（让订阅卡片从这一刻起跟商家后台对齐）：
 
@@ -104,7 +104,13 @@ sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/realit
 sudo systemctl restart subscription-leaf
 ```
 
-如果 `usage-state.json` 还不存在或刚被恢复清空，先访问一次 `http://127.0.0.1/<TOKEN>/status` 让 leaf 建立 baseline，再按上面公式校准。`USAGE_OFFSET_BYTES` 可以为负数；服务端会把最终返回值钳到不低于 0。
+如果商家不是每月 1 号重置流量，先把 `BILLING_CYCLE_DAY` 设成商家重置日：
+
+```bash
+sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/reality-resi-stack/subscription-leaf.env
+```
+
+如果 `usage-state.json` 还不存在或刚被恢复清空，leaf 会在下一次后台采样或 `/status` 请求时自动建状态。`USAGE_OFFSET_BYTES` 可以为负数；服务端会把最终返回值钳到不低于 0。
 
 ---
 

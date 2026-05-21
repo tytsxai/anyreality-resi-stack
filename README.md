@@ -34,7 +34,7 @@
 
 - **一行安装 / One-line install**: `install/install.sh` 完成系统预检、sing-box 安装、Reality 密钥生成、配置渲染、systemd 服务、UFW / fail2ban、备份 timer 和自检。
 - **VLESS + Reality + xtls-rprx-vision**: 默认监听 `443/tcp`，无需域名和 TLS 证书，适合个人 VPS 自托管。
-- **订阅服务 / Subscription server**: `subscription/leaf_server.py` 用 Python 标准库提供 `/<TOKEN>/`、`/<TOKEN>/status`、`/healthz`，并通过 `Subscription-Userinfo` 响应头给客户端显示流量卡片。
+- **订阅服务 / Subscription server**: `subscription/leaf_server.py` 用 Python 标准库提供 `/<TOKEN>/`、`/<TOKEN>/status`、`/healthz`，后台采样网卡用量，并通过 `Subscription-Userinfo` 响应头给客户端显示流量卡片。
 - **双节点智能分流 / Dual-node smart routing**: 可用住宅节点承载 OpenAI / Anthropic / Netflix 等流量，用数据中心节点承载 Telegram / Discord 等对住宅 IP 不友好的流量。
 - **可运维性 / Operability**: 支持 `--dry-run`、`--non-interactive`、`--config`、幂等重跑、每日配置备份、日志限额、BBR、swap、健康检查。
 - **安全边界 / Safety boundaries**: 每台服务器生成独立 UUID / Reality key / subscription token；仓库带脱敏扫描和哈希 denylist，避免把真实凭证提交到 Git。
@@ -173,7 +173,7 @@ Client downloads a *single* subscription URL from the aggregator. That URL retur
 | Bash installer with `--dry-run`, `--non-interactive`, `--config` | Bash 模块化安装器，支持 `--dry-run`/`--non-interactive`/`--config` |
 | Official Sagernet apt source + verified GPG fingerprint | sing-box 官方 apt 源 + GPG 指纹校验 |
 | Custom Python subscription server (zero deps, `Subscription-Userinfo`, `/healthz`) | 自写 Python 订阅服务（零依赖，含流量卡片、健康检查） |
-| Dual-node aggregator with cache fallback (avoids "0 used" jitter on leaf outage) | 双节点聚合 + 缓存回退（leaf 短暂离线不会归零跳变） |
+| Dual-node aggregator with background polling and cache fallback (avoids "0 used" jitter on leaf outage) | 双节点聚合 + 后台轮询 + 缓存回退（leaf 短暂离线不会归零跳变） |
 | Idempotent installer (re-runnable, no double-config drift) | 安装器幂等（重跑不会重复配置） |
 | systemd-timer daily config backup | systemd timer 每日配置备份 |
 | BBR / swap / journald / fail2ban out of the box | BBR / swap / journald 限额 / fail2ban 开箱即用 |

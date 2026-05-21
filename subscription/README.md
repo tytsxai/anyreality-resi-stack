@@ -7,8 +7,8 @@ a proper subscription endpoint with usage cards.
 
 | Server | Role | Where it runs |
 |---|---|---|
-| `leaf_server.py` | Reads `/sys/class/net/<iface>/statistics/*_bytes` on the host where sing-box lives, exposes the rendered Clash/sing-box profile, and emits `Subscription-Userinfo` headers. | On every node — at minimum, the residential node. |
-| `aggregator_server.py` | Polls the leaf's `/<TOKEN>/status` JSON, caches it, and serves a *unified* dual-node profile. Falls back to the cache if the leaf is unreachable. | On the data-center backup node when you run a dual-node deployment. |
+| `leaf_server.py` | Reads `/sys/class/net/<iface>/statistics/*_bytes` on the host where sing-box lives, samples usage in the background, exposes the rendered Clash/sing-box profile, and emits `Subscription-Userinfo` headers. | On every node — at minimum, the residential node. |
+| `aggregator_server.py` | Polls the leaf's `/<TOKEN>/status` JSON in the background, caches it, and serves a *unified* dual-node profile. Falls back to the cache if the leaf is unreachable. | On the data-center backup node when you run a dual-node deployment. |
 
 Both have **no third-party Python dependencies**. Standard library only. They
 are designed to run as `systemd` services managed by `install/lib/subscription.sh`.
@@ -31,8 +31,15 @@ The `Subscription-Userinfo` header follows the original
 
 | File | Owner | Purpose |
 |---|---|---|
-| `/var/lib/reality-resi-stack/usage-state.json` | leaf | Monotonically increasing monthly counter; first sample is a baseline and the counter rolls over on month change. |
-| `/var/lib/reality-resi-stack/usage-cache.json` | aggregator | Last-known-good remote status; serves as fallback when the leaf is down. |
+| `/var/lib/reality-resi-stack/usage-state.json` | leaf | Monotonically increasing billing-period counter; defaults to calendar months, or set `BILLING_CYCLE_DAY` to match the provider reset day. |
+| `/var/lib/reality-resi-stack/usage-cache.json` | aggregator | Last-known-good remote status; refreshed in the background and used as fallback when the leaf is down. |
+
+The leaf samples usage every `USAGE_POLL_INTERVAL_SECONDS` seconds, so the
+counter stays current even when no client is refreshing the subscription URL.
+On first state creation, `COUNT_CURRENT_BOOT_ON_INIT=true` counts bytes already
+present in the current boot. That makes the card track provider dashboards more
+closely when the subscription server is installed after the VPS has already
+been running.
 
 State files are excluded from backups intentionally — they are runtime data,
 not configuration.

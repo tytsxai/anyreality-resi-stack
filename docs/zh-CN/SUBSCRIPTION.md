@@ -74,8 +74,11 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 | `TOKEN` | ✓ | 订阅 URL 的路径前缀；客户端命中 `/<TOKEN>/` 才返回订阅 |
 | `INTERFACE` | ✓ | 网卡名，用于读 `rx_bytes` / `tx_bytes` |
 | `FILE_DIR` | | 订阅文件目录（默认 `/etc/reality-resi-stack/files`） |
-| `STATE_FILE` | | 月累计状态持久化文件 |
+| `STATE_FILE` | | 账期累计状态持久化文件 |
 | `USAGE_OFFSET_BYTES` | | 校准基线：当流量计数器从月中接管时填这里 |
+| `BILLING_CYCLE_DAY` | | 商家流量重置日，默认 `1` 表示自然月 |
+| `USAGE_POLL_INTERVAL_SECONDS` | | 后台采样间隔，默认 `60` 秒 |
+| `COUNT_CURRENT_BOOT_ON_INIT` | | 首次建状态时是否计入本次开机已产生流量，默认 `true` |
 | `TOTAL_BYTES` | | 套餐总量（仅显示用） |
 | `EXPIRE_TS` | | 套餐到期 Unix 时间戳，0 = 不显示 |
 
@@ -87,20 +90,22 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 | `REMOTE_STATUS_URL` | ✓ | leaf 的 `/status` 完整 URL |
 | `CACHE_FILE` | | 上次轮询结果的缓存文件 |
 | `CACHE_TTL_SECONDS` | | 缓存视为新鲜的时间（默认 60s） |
+| `REMOTE_POLL_INTERVAL_SECONDS` | | 后台轮询 leaf 的间隔（默认跟随 `CACHE_TTL_SECONDS`） |
 | `FALLBACK_USED_BYTES` | | 缓存也没有时的兜底值 |
 
 ---
 
 ## 流量统计的语义
 
-**Leaf 统计的是这台机器的网卡月累计 RX+TX 流量**：
+**Leaf 统计的是这台机器在当前账期内的网卡 RX+TX 流量**：
 
 ```
 读 /sys/class/net/<INTERFACE>/statistics/rx_bytes
 读 /sys/class/net/<INTERFACE>/statistics/tx_bytes
-按月份累计，下月归零
-首次采样只建立 baseline，不把安装前的历史网卡流量算进去
-启动时通过 boot_id 检测重启 —— 重启后把新 boot 的当前计数并入月累计
+每 USAGE_POLL_INTERVAL_SECONDS 秒后台采样
+按商家账期累计，在 BILLING_CYCLE_DAY 重置
+首次采样默认计入本次开机已经产生的流量；如需只建 baseline，可设 COUNT_CURRENT_BOOT_ON_INIT=false
+启动时通过 boot_id 检测重启 —— 重启后把新 boot 的当前计数并入当前账期累计
 返回客户端前加上 USAGE_OFFSET_BYTES（手动校准）
 ```
 
@@ -111,7 +116,7 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 ❌ **不等于商家后台账单**。商家可能按 95 计费、按出方向、按五分钟峰值，口径完全不同。
 ❌ 如果你的 sing-box 在这台机器上同时跑别的负载（如个人 web），这些非代理流量也会被算进去。
 
-商家后台数字比订阅卡片大很多时，最常见原因是订阅服务"晚启动"了 —— 月初服务还没起，先漏算了一段。首次采样也会刻意只建立 baseline，避免把安装前的历史流量一次性算进卡片。此时用 `USAGE_OFFSET_BYTES` 补一个基线即可（命令在 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) "流量统计漂移"小节）。
+商家后台数字比订阅卡片大很多时，最常见原因是订阅服务"晚启动"了，或商家流量重置日不是每月 1 号。先把 `BILLING_CYCLE_DAY` 设成商家重置日，再按需用 `USAGE_OFFSET_BYTES` 补一个基线（命令在 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) "流量统计漂移"小节）。
 
 ---
 
@@ -123,6 +128,8 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 2. **缓存过期 / 缺失** → 向 leaf 拉 `/status`，更新缓存
 3. **leaf 不可达** → 用最后一次的缓存（哪怕过期）
 4. **缓存也没有** → 用 `FALLBACK_USED_BYTES`
+
+aggregator 还会每 `REMOTE_POLL_INTERVAL_SECONDS` 秒后台刷新 leaf 缓存，所以即使没有客户端正在拉订阅，流量卡片也会持续接近最新状态。
 
 为什么这样设计：客户端订阅是按 `Profile-Update-Interval`（默认 24h）拉，每次拉都会用到这个值；如果 leaf 在拉的瞬间正好维护重启，**返回 0 会让客户端的流量条突然清零**，再到下次更新才"恢复"——这种跳变远比一个稍微过期的数字更让人困惑。
 
