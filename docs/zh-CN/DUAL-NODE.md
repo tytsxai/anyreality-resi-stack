@@ -223,5 +223,7 @@ T+1h:   leaf 恢复
 
 ## 下一步
 
+- 第一次部署先走单节点 → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - 订阅服务的内部端点设计 → [SUBSCRIPTION.md](SUBSCRIPTION.md)
+- 还在比较是否该用面板 → [COMPARISON.md](COMPARISON.md)
 - 双节点跑起来后出问题 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

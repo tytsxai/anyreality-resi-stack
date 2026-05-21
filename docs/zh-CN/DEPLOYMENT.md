@@ -191,7 +191,9 @@ bash /opt/reality-resi-stack/install/uninstall.sh --purge-all
 
 ## 8. 下一步
 
+- 第一次部署、想按步骤照做 → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - 客户端怎么导入 → [CLIENTS.md](CLIENTS.md)
 - 订阅服务的设计与端点契约 → [SUBSCRIPTION.md](SUBSCRIPTION.md)
 - 启用双节点 + 智能分流（解决 TG 软风控等） → [DUAL-NODE.md](DUAL-NODE.md)
+- 和 3x-ui / x-ui / 手写配置怎么选 → [COMPARISON.md](COMPARISON.md)
 - 跑起来后出问题 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

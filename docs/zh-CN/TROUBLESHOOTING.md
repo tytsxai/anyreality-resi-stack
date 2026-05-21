@@ -215,3 +215,9 @@ curl --proxy socks5h://127.0.0.1:7891 https://ipinfo.io
 - **不要** 粘贴 UUID / Reality 公私钥 / 服务器 IP
 
 模板会再提醒一次。
+
+相关文档：
+
+- 第一次部署：先看 [新手完整教程](BEGINNER_GUIDE.md)
+- 判断是否该上双节点：看 [双节点 + 智能分流](DUAL-NODE.md)
+- 还在选 3x-ui / x-ui / 手写配置：看 [同类评分对比](COMPARISON.md)

@@ -214,3 +214,9 @@ When filing an issue, please include:
 - **Do NOT** paste UUIDs, Reality keys, or server IPs
 
 The issue template reminds you again.
+
+Related docs:
+
+- First deployment: [Beginner guide](BEGINNER_GUIDE.md)
+- Deciding whether dual-node routing is needed: [Dual-node smart routing](DUAL-NODE.md)
+- Choosing between this stack, 3x-ui, x-ui, and manual config: [Comparison](COMPARISON.md)

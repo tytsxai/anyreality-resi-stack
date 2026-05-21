@@ -189,7 +189,9 @@ bash /opt/reality-resi-stack/install/uninstall.sh --purge-all
 
 ## 8. Next
 
+- First deployment, step by step → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - Importing into clients → [CLIENTS.md](CLIENTS.md)
 - Subscription server design → [SUBSCRIPTION.md](SUBSCRIPTION.md)
 - Enabling dual-node + smart routing (fixes Telegram soft-throttle, etc.) → [DUAL-NODE.md](DUAL-NODE.md)
+- Choosing between this stack, 3x-ui, x-ui, and manual config → [COMPARISON.md](COMPARISON.md)
 - Things go wrong → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

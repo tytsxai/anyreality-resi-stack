@@ -156,5 +156,6 @@ curl -I http://127.0.0.1:80/test/
 
 ## 下一步
 
+- 第一次部署 → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - 部署聚合节点 → [DUAL-NODE.md](DUAL-NODE.md)
 - 流量卡片不显示 / 流量数字不对 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

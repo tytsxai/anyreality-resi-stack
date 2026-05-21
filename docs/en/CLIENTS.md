@@ -128,6 +128,7 @@ To override a specific rule, edit the client's "ruleset" directly — no need to
 
 ## Things go wrong?
 
+- First deployment and not sure where to start → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - Card doesn't show traffic → [TROUBLESHOOTING.md](TROUBLESHOOTING.md), "Subscription URL works but no usage card"
 - Client can't connect → [TROUBLESHOOTING.md](TROUBLESHOOTING.md), "Client cannot connect"
 - TG uploads slow → [DUAL-NODE.md](DUAL-NODE.md), or [TROUBLESHOOTING.md](TROUBLESHOOTING.md), "Telegram / Discord"

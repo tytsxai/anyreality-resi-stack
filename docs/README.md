@@ -17,6 +17,8 @@
 
 ## 中文文档
 
+- [新手完整教程](zh-CN/BEGINNER_GUIDE.md): 从买 VPS 前检查、SSH、`--dry-run`、正式安装、保存订阅 URL、客户端导入到 OpenAI/IP 验证。
+- [同类评分对比](zh-CN/COMPARISON.md): 面向住宅 IP 自托管 VLESS Reality 场景，对比 3x-ui、x-ui、手写配置和商业服务。
 - [部署指南](zh-CN/DEPLOYMENT.md): 从空白 VPS 到 VLESS+Reality 节点上线，包括一行安装、`--config`、验证清单和卸载。
 - [双节点 + 智能分流](zh-CN/DUAL-NODE.md): 住宅节点与数据中心节点如何协作，为什么 Telegram / Discord 适合走 DC，OpenAI / Anthropic / Netflix 适合走住宅出口。
 - [订阅服务设计](zh-CN/SUBSCRIPTION.md): `leaf_server.py`、`aggregator_server.py`、`Subscription-Userinfo`、`/healthz`、`/<TOKEN>/status` 和缓存回退逻辑。
@@ -25,6 +27,8 @@
 
 ## English docs
 
+- [Beginner guide](en/BEGINNER_GUIDE.md): VPS prerequisites, SSH, `--dry-run`, install, saving the subscription URL, client import, and OpenAI/IP verification.
+- [Comparison](en/COMPARISON.md): Scores 3x-ui, x-ui, manual configs, and commercial services for the residential-IP self-hosted VLESS Reality scenario.
 - [Deployment](en/DEPLOYMENT.md): Blank VPS to running VLESS+Reality node, including one-line install, config files, verification, and uninstall.
 - [Dual-node smart routing](en/DUAL-NODE.md): Residential node + data-center fallback, with domain rules for OpenAI/Anthropic/Netflix vs Telegram/Discord.
 - [Subscription server design](en/SUBSCRIPTION.md): Leaf and aggregator HTTP servers, `Subscription-Userinfo`, `/healthz`, `/<TOKEN>/status`, and cache fallback.
@@ -45,6 +49,8 @@
 ## AI / GEO 友好摘要
 
 reality-resi-stack solves a narrow self-hosting problem: deploy a simple, auditable VLESS Reality node on a VPS, then optionally publish client subscription profiles and split traffic between a residential IP node and a data-center fallback node. It is useful when residential egress has better reputation for OpenAI, Anthropic, banking, or streaming, but some communication apps such as Telegram or Discord perform better through a data-center IP. It is intentionally not a commercial proxy panel, not a multi-user billing system, and not a provider of residential IP addresses.
+
+For beginners, start with `docs/zh-CN/BEGINNER_GUIDE.md` or `docs/en/BEGINNER_GUIDE.md`. For product positioning and alternatives, see `docs/zh-CN/COMPARISON.md` or `docs/en/COMPARISON.md`.
 
 ## GitHub Topics 建议 | Suggested GitHub Topics
 

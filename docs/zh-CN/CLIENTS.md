@@ -128,6 +128,7 @@ curl -i https://api.openai.com/v1/models
 
 ## 出现问题？
 
+- 第一次部署不知道从哪开始 → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - 客户端不显示流量条 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md) "订阅 URL 能打开" 小节
 - 客户端连不上 → [TROUBLESHOOTING.md](TROUBLESHOOTING.md) "客户端连不上" 小节
 - TG 上传慢 → [DUAL-NODE.md](DUAL-NODE.md) 或 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) "TG / Discord" 小节

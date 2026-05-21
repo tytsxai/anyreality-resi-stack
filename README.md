@@ -12,7 +12,7 @@
 [![VLESS Reality](https://img.shields.io/badge/protocol-VLESS%2BReality-green.svg)](#)
 [![Release](https://img.shields.io/github/v/release/tytsxai/reality-resi-stack)](https://github.com/tytsxai/reality-resi-stack/releases)
 
-[Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/reality-resi-stack/issues)
+[新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/reality-resi-stack/issues)
 
 > **Search keywords / 搜索关键词**: residential IP VLESS, VLESS Reality residential proxy, sing-box residential installer, VLESS+Reality 一键脚本, OpenAI 住宅 IP 代理, ChatGPT 住宅 IP 出口, Telegram 住宅 IP 上传慢, Discord 住宅 IP 降权, Clash 域名分流, 双节点智能分流, alternative to 3x-ui for residential VPS
 
@@ -38,6 +38,42 @@
 - **双节点智能分流 / Dual-node smart routing**: 可用住宅节点承载 OpenAI / Anthropic / Netflix 等流量，用数据中心节点承载 Telegram / Discord 等对住宅 IP 不友好的流量。
 - **可运维性 / Operability**: 支持 `--dry-run`、`--non-interactive`、`--config`、幂等重跑、每日配置备份、日志限额、BBR、swap、健康检查。
 - **安全边界 / Safety boundaries**: 每台服务器生成独立 UUID / Reality key / subscription token；仓库带脱敏扫描和哈希 denylist，避免把真实凭证提交到 Git。
+
+## 新手从这里开始 | Start here
+
+如果你第一次部署 VLESS Reality，不需要先理解所有协议细节。按下面顺序走：
+
+1. 准备一台 Ubuntu 22.04+ / Debian 12+ VPS，确认能用 SSH 登录，并能开放 `443/tcp` 和可选的 `80/tcp`。
+2. 先看 [新手教程](docs/zh-CN/BEGINNER_GUIDE.md)，它按“买 VPS 前检查 → SSH → dry-run → 正式安装 → 客户端导入 → 验证出口”的顺序写。
+3. 只部署一台服务器时，直接用 `--with-subscription`；遇到 Telegram / Discord 上传慢，再看 [双节点智能分流](docs/zh-CN/DUAL-NODE.md)。
+4. 需要确认它和 3x-ui / x-ui / 手写配置怎么选，先看 [同类评分对比](docs/zh-CN/COMPARISON.md)。
+
+English: if this is your first VLESS Reality deployment, start with the [beginner guide](docs/en/BEGINNER_GUIDE.md), then use the one-line installer below. The [comparison page](docs/en/COMPARISON.md) explains when this stack is a better fit than 3x-ui, x-ui, manual configs, or commercial panels.
+
+## 为什么选它 | Why choose this stack
+
+`reality-resi-stack` 不追求做成大而全的机场面板。它把范围收窄到一个更实际的问题：**你已经有 VPS，尤其是住宅 IP VPS，想用最少依赖部署一个可审计、可重跑、可给客户端导入的 VLESS Reality 节点**。
+
+| 你关心的点 | 本项目怎么处理 |
+|---|---|
+| 小白能不能直接用 | 一行安装、dry-run、完成卡、订阅 URL、客户端导入教程 |
+| 住宅 IP 有没有被用好 | 默认把住宅出口用于 OpenAI / Anthropic / Netflix / banking 等 IP 信誉敏感场景 |
+| Telegram / Discord 慢怎么办 | 双节点模式内置 TG / Discord → 数据中心节点，OpenAI / Claude → 住宅节点 |
+| 会不会变成面板安全负担 | 无 Web 管理后台，默认单用户单节点，减少暴露面 |
+| 出问题能不能排查 | systemd 服务、`/healthz`、`Subscription-Userinfo`、日志命令、故障排查文档 |
+| 会不会把密钥提交出去 | 每台服务器本地生成密钥，仓库带 redact 扫描和 hash denylist |
+
+## 选型判断 | Which tool should I use?
+
+| 场景 | 推荐 |
+|---|---|
+| 一台 VPS，想快速部署自用 VLESS Reality | `reality-resi-stack` |
+| 住宅 IP 主要给 OpenAI / Claude / Netflix 用，但 TG / Discord 体验差 | `reality-resi-stack` 双节点模式 |
+| 需要多用户、到期时间、流量限额、Web 面板和管理员 API | 3x-ui / x-ui 更合适 |
+| 只是学习 Xray/sing-box 底层配置 | 手写配置或官方文档更合适 |
+| 不想自管服务器，只想购买现成节点 | 商业机场/代理服务更省事 |
+
+在“住宅 IP 自托管 VLESS Reality + 新手可落地 + 低维护”这个具体场景下，本项目的综合评分和取舍见 [同类评分对比](docs/zh-CN/COMPARISON.md) / [comparison](docs/en/COMPARISON.md)。
 
 ## 适用与不适用 | Fit and limits
 

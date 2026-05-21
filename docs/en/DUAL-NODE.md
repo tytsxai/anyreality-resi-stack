@@ -217,5 +217,7 @@ The visible result: **the client usage card never visibly drops to zero**. Admit
 
 ## Next
 
+- First deployment should start single-node → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - Subscription endpoint contract → [SUBSCRIPTION.md](SUBSCRIPTION.md)
+- Still choosing between a panel and this stack → [COMPARISON.md](COMPARISON.md)
 - Things break after going dual-node → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

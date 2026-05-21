@@ -26,12 +26,14 @@ The project is designed for people who already own VPS servers. It does not sell
 - `subscription/aggregator_server.py`: zero-dependency Python HTTP server that polls a leaf `/status`, caches usage, and serves a unified dual-node subscription profile.
 - `templates/`: sing-box JSON, Clash YAML, systemd unit, and environment templates.
 - `examples/`: generated placeholder profiles from `scripts/make-example.sh`; values are intentionally fake and must not be deployed.
-- `docs/`: bilingual documentation for deployment, dual-node routing, subscription design, client import, and troubleshooting.
+- `docs/`: bilingual documentation for beginner setup, comparison with alternatives, deployment, dual-node routing, subscription design, client import, and troubleshooting.
 
 ## Key docs
 
 - [README.md](README.md): bilingual landing page, project summary, quick start, architecture, features, limits, FAQ.
 - [docs/README.md](docs/README.md): documentation index and code map.
+- [docs/zh-CN/BEGINNER_GUIDE.md](docs/zh-CN/BEGINNER_GUIDE.md) and [docs/en/BEGINNER_GUIDE.md](docs/en/BEGINNER_GUIDE.md): beginner path from VPS prerequisites and SSH to dry-run, installation, subscription import, and OpenAI/IP verification.
+- [docs/zh-CN/COMPARISON.md](docs/zh-CN/COMPARISON.md) and [docs/en/COMPARISON.md](docs/en/COMPARISON.md): scenario-specific scoring against 3x-ui, x-ui, manual configs, and commercial services for residential-IP self-hosted VLESS Reality.
 - [docs/zh-CN/DEPLOYMENT.md](docs/zh-CN/DEPLOYMENT.md) and [docs/en/DEPLOYMENT.md](docs/en/DEPLOYMENT.md): deployment guide.
 - [docs/zh-CN/DUAL-NODE.md](docs/zh-CN/DUAL-NODE.md) and [docs/en/DUAL-NODE.md](docs/en/DUAL-NODE.md): residential + data-center smart routing.
 - [docs/zh-CN/SUBSCRIPTION.md](docs/zh-CN/SUBSCRIPTION.md) and [docs/en/SUBSCRIPTION.md](docs/en/SUBSCRIPTION.md): subscription leaf and aggregator design.
@@ -42,10 +44,11 @@ The project is designed for people who already own VPS servers. It does not sell
 
 ## Intended users
 
-- Developers or small teams who own a residential IP VPS or regular VPS.
+- Beginners, developers, or small teams who own a residential IP VPS or regular VPS.
 - Users who need OpenAI, ChatGPT, Anthropic, Claude, Netflix, banking, or similar traffic to use a residential egress IP.
 - Users whose Telegram or Discord experience is degraded on a residential subnet and who want domain-based routing to a data-center fallback node.
 - Operators who prefer simple Bash + systemd automation over a full web panel.
+- Users comparing this repository with 3x-ui, x-ui, manual sing-box/Xray configs, or commercial proxy services for a self-hosted residential-IP workflow.
 
 ## Not intended for
 

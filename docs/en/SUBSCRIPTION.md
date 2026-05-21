@@ -142,5 +142,6 @@ curl -I http://127.0.0.1:80/test/
 
 ## Next
 
+- First deployment → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
 - Deploy aggregator → [DUAL-NODE.md](DUAL-NODE.md)
 - Usage card missing / counter wrong → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
