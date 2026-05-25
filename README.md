@@ -7,9 +7,9 @@
 > `reality-resi-stack` is a self-hosted proxy deployment toolkit for individuals and small teams. It installs **sing-box + VLESS + Reality + xtls-rprx-vision** on Ubuntu/Debian VPS hosts, with an optional zero-dependency Python subscription server, usage-card headers, and dual-node smart routing.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-orange.svg)](#)
+[![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-orange.svg)](docs/en/DEPLOYMENT.md)
 [![sing-box](https://img.shields.io/badge/core-sing--box-purple.svg)](https://sing-box.sagernet.org)
-[![VLESS Reality](https://img.shields.io/badge/protocol-VLESS%2BReality-green.svg)](#)
+[![VLESS Reality](https://img.shields.io/badge/protocol-VLESS%2BReality-green.svg)](docs/en/DEPLOYMENT.md)
 [![Release](https://img.shields.io/github/v/release/tytsxai/reality-resi-stack)](https://github.com/tytsxai/reality-resi-stack/releases)
 
 [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/reality-resi-stack/issues)
