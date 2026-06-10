@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # backup.sh — install a daily systemd timer that tarballs configuration
-# (NOT logs, NOT secrets, NOT runtime state).
+# (NOT logs, NOT runtime state). It includes /etc/reality-resi-stack for
+# rollback, so backup archives are sensitive and must not be shared publicly.
 
 # shellcheck source=./common.sh
 [[ -n "${COMMON_SH_LOADED:-}" ]] || {
@@ -35,9 +36,9 @@ trap 'rm -rf "$TMP"' EXIT
 
 tar -czf "$OUT" -C / --ignore-failed-read \
   --exclude=var/lib/reality-resi-stack/usage-state.json \
-  --exclude=var/lib/reality-resi-stack/usage-state.tmp \
   --exclude=var/lib/reality-resi-stack/usage-cache.json \
-  --exclude=var/lib/reality-resi-stack/usage-cache.tmp \
+  --exclude='var/lib/reality-resi-stack/*.tmp' \
+  --exclude='var/lib/reality-resi-stack/.*.tmp' \
   etc/sing-box \
   etc/systemd/system/sing-box.service \
   etc/systemd/system/subscription-leaf.service \
@@ -49,7 +50,7 @@ tar -czf "$OUT" -C / --ignore-failed-read \
   etc/fail2ban \
   etc/sysctl.d \
   etc/systemd/journald.conf.d \
-  "$TMP/manifest.txt"
+  -C "$TMP" manifest.txt
 chmod 600 "$OUT"
 
 # Retain only the 3 most recent backups.
