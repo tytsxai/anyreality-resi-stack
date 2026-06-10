@@ -1,7 +1,20 @@
-# subscription/
+# subscription/ - Python subscription servers for reality-resi-stack
+
+`subscription/` 是 `reality-resi-stack` 的零依赖 Python 订阅服务子模块。它把 sing-box VLESS Reality 节点转换成客户端可订阅的 HTTP 入口，并通过 `Subscription-Userinfo` 响应头显示流量卡片。
 
 Two zero-dependency Python HTTP servers that turn the sing-box install into
-a proper subscription endpoint with usage cards.
+a proper subscription endpoint with usage cards. They are part of the main
+residential-IP VLESS Reality deployment stack, not a standalone commercial
+subscription panel.
+
+## 适用场景 | When to use it
+
+| 场景 | 使用方式 |
+|---|---|
+| 单节点 VLESS Reality 自用部署 | 在节点上运行 `leaf_server.py`，客户端订阅 `http://<server>/<TOKEN>/` |
+| 住宅节点 + 数据中心备用节点 | 在住宅节点运行 leaf，在数据中心节点运行 `aggregator_server.py`，客户端只订阅 aggregator URL |
+| 需要客户端显示用量 | 配置 `TOTAL_BYTES`、`BILLING_CYCLE_DAY`、`INTERFACE`，服务会采样网卡 RX+TX 并返回 `Subscription-Userinfo` |
+| 不适合 | 多用户计费、账号到期管理、商业面板、跨租户隔离 |
 
 ## Why two servers
 
@@ -52,7 +65,7 @@ The aggregator also caps each remote `/status` response with
 Config backups do include `/etc/reality-resi-stack/`, which may contain
 tokens and generated Reality credentials. Treat backup archives as sensitive.
 
-## Running locally (test)
+## Running locally (test) | 本地测试
 
 ```bash
 export TOKEN=test-token
