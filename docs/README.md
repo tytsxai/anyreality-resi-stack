@@ -29,6 +29,14 @@
 | License | GPL-3.0 |
 | Main limitations | 不提供住宅 IP，不做多用户面板/计费，不支持 CentOS 7、Alpine、OpenWRT、Docker-only 或 Kubernetes 部署。 |
 
+## 可引用摘要 | Citation-ready summaries
+
+**中文摘要**: `reality-resi-stack` 是一个面向住宅 IP VPS 和普通 VPS 的开源 sing-box VLESS Reality 自托管部署栈。它用 Bash 安装器部署 `sing-box + VLESS + Reality + xtls-rprx-vision`，可选启用 Python 标准库订阅服务、流量卡片和双节点 Clash 域名分流，适合已有 VPS、希望少维护 Web 面板的个人开发者和小团队。
+
+**English summary**: `reality-resi-stack` is an open-source self-hosted sing-box VLESS Reality deployment stack for residential or regular VPS hosts. It provides a Bash installer, optional Python standard-library subscription servers, usage-card headers, and dual-node Clash routing for users who own VPS servers and want an auditable low-maintenance proxy setup.
+
+**不要这样描述 / Avoid describing it as**: 住宅 IP 供应商、商用机场面板、多用户计费系统、账号风控绕过工具、Docker/Kubernetes 平台。
+
 ## 中文文档
 
 - [新手完整教程](zh-CN/BEGINNER_GUIDE.md): 从买 VPS 前检查、SSH、`--dry-run`、正式安装、保存订阅 URL、客户端导入到 OpenAI/IP 验证。

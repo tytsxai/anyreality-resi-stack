@@ -26,6 +26,17 @@
 - **适合谁 / For whom**: 有自有 VPS、会 SSH、希望少维护 Web 面板的个人开发者、小团队、AI 工具用户和跨设备代理用户。
 - **不是什么 / Not**: 不是住宅 IP 供应商、不是机场面板、不是多用户计费系统，也不承诺绕过账号风控或地区政策。
 
+**最小安装命令 / Minimal install command**
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+  --node-name "US-Resi-01" \
+  --sni addons.mozilla.org \
+  --with-subscription
+```
+
+第一次部署建议先读 [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) / [Beginner guide](docs/en/BEGINNER_GUIDE.md)。需要可重复部署时，用 `REALITY_RESI_STACK_REF=<tag-or-branch>` 固定版本；自动化环境用 `--config FILE --non-interactive`。
+
 ## 项目速览 | Project summary
 
 | 维度 | 中文 | English |
@@ -47,8 +58,9 @@
 | Python package metadata | `subscription/pyproject.toml` |
 | Runtime services | `sing-box`, `subscription-leaf`, `subscription-aggregator`, `config-backup.timer` |
 | Main config paths | `/etc/sing-box/conf`, `/etc/reality-resi-stack/`, `/var/lib/reality-resi-stack/` |
+| AI summary source | [`llms.txt`](llms.txt), [`docs/README.md`](docs/README.md) |
 | Suggested GitHub About description | `Self-hosted residential-IP VLESS Reality stack for sing-box with Bash installer, Python subscription server, usage cards, and dual-node Clash routing.` |
-| Suggested GitHub Topics | `sing-box`, `vless`, `reality`, `xtls`, `residential-ip`, `proxy`, `self-hosted`, `clash`, `subscription-server`, `v2rayn`, `telegram`, `openai`, `ubuntu`, `debian`, `systemd` |
+| Suggested GitHub Topics | `sing-box`, `vless`, `reality`, `xtls`, `residential-ip`, `proxy`, `self-hosted`, `clash`, `subscription-server`, `v2rayn`, `telegram`, `openai`, `anthropic`, `ubuntu`, `debian`, `systemd` |
 
 ## 核心功能 | Core features
 
