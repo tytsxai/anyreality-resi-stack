@@ -134,6 +134,32 @@ class LeafAccountingTest(unittest.TestCase):
         self.assertEqual(self.leaf.TimeoutThreadingHTTPServer.request_queue_size, 64)
         self.assertGreater(self.leaf.REQUEST_TIMEOUT_SECONDS, 0)
 
+    def test_counter_sample_uses_state_lock(self) -> None:
+        class TrackingLock:
+            acquired = False
+
+            def __enter__(self) -> None:
+                self.acquired = True
+
+            def __exit__(self, exc_type, exc, traceback) -> None:  # noqa: ANN001
+                self.acquired = False
+
+        tracking_lock = TrackingLock()
+        self.leaf.state_lock = tracking_lock
+
+        def read_total_bytes() -> int:
+            self.assertTrue(tracking_lock.acquired)
+            return 100
+
+        def read_boot_id() -> str:
+            self.assertTrue(tracking_lock.acquired)
+            return "boot-a"
+
+        self.leaf.read_total_bytes = read_total_bytes
+        self.leaf.read_boot_id = read_boot_id
+
+        self.assertEqual(self.leaf.update_usage_state(), 100)
+
 
 if __name__ == "__main__":
     unittest.main()

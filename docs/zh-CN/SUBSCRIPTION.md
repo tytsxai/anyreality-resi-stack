@@ -90,6 +90,7 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 | `TOKEN` | ✓ | 独立于 leaf 的 token |
 | `REMOTE_STATUS_URL` | ✓ | leaf 的 `/status` 完整 URL |
 | `REMOTE_TIMEOUT_SECONDS` | | 每次轮询 leaf 状态接口的超时，默认 `3` 秒 |
+| `MAX_REMOTE_STATUS_BYTES` | | 单次 leaf 状态响应最大读取字节数，默认 `65536` |
 | `CACHE_FILE` | | 上次轮询结果的缓存文件 |
 | `CACHE_TTL_SECONDS` | | 缓存视为新鲜的时间（默认 60s） |
 | `REMOTE_POLL_INTERVAL_SECONDS` | | 后台轮询 leaf 的间隔（默认跟随 `CACHE_TTL_SECONDS`） |

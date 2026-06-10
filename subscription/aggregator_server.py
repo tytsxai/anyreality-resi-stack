@@ -24,6 +24,7 @@ import logging
 import os
 import threading
 import time
+from contextlib import suppress
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -51,6 +52,7 @@ PROFILE_TITLE = os.environ.get("PROFILE_TITLE", "Reality-Residential-Dual")
 UPDATE_INTERVAL_HOURS = os.environ.get("UPDATE_INTERVAL_HOURS", "24")
 REMOTE_STATUS_URL = os.environ.get("REMOTE_STATUS_URL", "")
 REMOTE_TIMEOUT_SECONDS = float(os.environ.get("REMOTE_TIMEOUT_SECONDS", "3"))
+MAX_REMOTE_STATUS_BYTES = int(os.environ.get("MAX_REMOTE_STATUS_BYTES", "65536"))
 REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "10"))
 
 CONTENT_TYPES = {
@@ -60,13 +62,20 @@ CONTENT_TYPES = {
     ".txt": "text/plain; charset=utf-8",
 }
 
+cache_write_lock = threading.Lock()
+
 
 def read_remote_status() -> dict:
     if not REMOTE_STATUS_URL:
         return {}
     request = Request(REMOTE_STATUS_URL, headers={"User-Agent": "RealityResiStack-Aggregator/1.0"})
     with urlopen(request, timeout=REMOTE_TIMEOUT_SECONDS) as response:  # noqa: S310
-        return json.loads(response.read().decode("utf-8"))
+        body = response.read(MAX_REMOTE_STATUS_BYTES + 1)
+    if len(body) > MAX_REMOTE_STATUS_BYTES:
+        raise ValueError(
+            f"remote status response exceeds MAX_REMOTE_STATUS_BYTES={MAX_REMOTE_STATUS_BYTES}"
+        )
+    return json.loads(body.decode("utf-8"))
 
 
 def save_usage_cache(used_bytes: int, status: dict) -> None:
@@ -76,9 +85,16 @@ def save_usage_cache(used_bytes: int, status: dict) -> None:
         "remote_status": status,
         "cached_at": int(time.time()),
     }
-    tmp = CACHE_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, ensure_ascii=True, sort_keys=True), encoding="utf-8")
-    tmp.replace(CACHE_FILE)
+    tmp = CACHE_FILE.with_name(
+        f".{CACHE_FILE.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+    )
+    with cache_write_lock:
+        try:
+            tmp.write_text(json.dumps(payload, ensure_ascii=True, sort_keys=True), encoding="utf-8")
+            tmp.replace(CACHE_FILE)
+        finally:
+            with suppress(FileNotFoundError):
+                tmp.unlink()
 
 
 def read_usage_cache() -> tuple[int, dict] | None:

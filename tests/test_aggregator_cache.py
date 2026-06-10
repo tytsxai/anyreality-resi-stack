@@ -116,6 +116,23 @@ class AggregatorCacheTest(unittest.TestCase):
         self.assertEqual(self.aggregator.TimeoutThreadingHTTPServer.request_queue_size, 64)
         self.assertGreater(self.aggregator.REQUEST_TIMEOUT_SECONDS, 0)
 
+    def test_remote_status_response_size_is_capped(self) -> None:
+        class OversizedResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback) -> None:  # noqa: ANN001
+                return None
+
+            def read(self, size: int) -> bytes:
+                return b"x" * size
+
+        self.aggregator.REMOTE_STATUS_URL = "http://example.test/status"
+        self.aggregator.MAX_REMOTE_STATUS_BYTES = 4
+        with patch.object(self.aggregator, "urlopen", return_value=OversizedResponse()):
+            with self.assertRaisesRegex(ValueError, "MAX_REMOTE_STATUS_BYTES=4"):
+                self.aggregator.read_remote_status()
+
 
 if __name__ == "__main__":
     unittest.main()

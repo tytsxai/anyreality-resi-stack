@@ -44,6 +44,11 @@ been running.
 State files are excluded from backups intentionally — they are runtime data,
 not configuration.
 
+State/cache writes use atomic replace with per-thread temporary files, so
+parallel HTTP requests and background polling do not corrupt the JSON files.
+The aggregator also caps each remote `/status` response with
+`MAX_REMOTE_STATUS_BYTES` (default 64 KiB) before parsing it.
+
 Config backups do include `/etc/reality-resi-stack/`, which may contain
 tokens and generated Reality credentials. Treat backup archives as sensitive.
 

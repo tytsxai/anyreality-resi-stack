@@ -9,6 +9,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Leaf subscription accounting now samples interface counters while holding the state lock, preventing concurrent requests/background polling from applying stale samples out of order.
+- Aggregator usage cache writes now use per-thread temporary files plus atomic replace, avoiding `.tmp` collisions during concurrent refreshes.
 - Leaf subscription accounting now keeps usage fresher by sampling in the background every `USAGE_POLL_INTERVAL_SECONDS` seconds instead of only updating when a client pulls the subscription URL.
 - Leaf subscription accounting now supports provider billing reset days via `BILLING_CYCLE_DAY`, so plans that reset on the 11th do not roll over on the 1st by mistake.
 - Leaf subscription accounting now counts bytes already present in the current boot on first state creation by default (`COUNT_CURRENT_BOOT_ON_INIT=true`), while still supporting baseline-only mode and `USAGE_OFFSET_BYTES` calibration.
@@ -25,6 +27,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Aggregator leaf-status polling now caps each remote status response with `MAX_REMOTE_STATUS_BYTES` (default 64 KiB) before parsing JSON.
 - Subscription systemd units now use basic sandboxing (`NoNewPrivileges`, `PrivateTmp`, `ProtectHome`, `ProtectSystem=strict`) and only keep `/var/lib/reality-resi-stack` writable.
 - Config backups now exclude runtime usage/cache state, set backup directory permissions to `700`, and write archives as `600`.
 

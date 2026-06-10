@@ -76,6 +76,7 @@ Full reference in `templates/env/subscription-leaf.env.example` and `subscriptio
 | `TOKEN` | ✓ | Independent of the leaf's token |
 | `REMOTE_STATUS_URL` | ✓ | The leaf's `/status` URL, fetched on every poll |
 | `REMOTE_TIMEOUT_SECONDS` | | Timeout for each leaf status poll, default `3` |
+| `MAX_REMOTE_STATUS_BYTES` | | Maximum bytes read from one leaf status response, default `65536` |
 | `CACHE_FILE` | | Last-known-good remote status |
 | `CACHE_TTL_SECONDS` | | Cache freshness window (default 60) |
 | `REMOTE_POLL_INTERVAL_SECONDS` | | Background leaf polling interval (default follows `CACHE_TTL_SECONDS`) |

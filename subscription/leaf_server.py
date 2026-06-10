@@ -21,6 +21,7 @@ import logging
 import os
 import threading
 import time as time_module
+from contextlib import suppress
 from datetime import datetime, time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -135,9 +136,15 @@ def load_state() -> dict:
 
 def save_state(state: dict) -> None:
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = STATE_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(state, ensure_ascii=True, sort_keys=True), encoding="utf-8")
-    tmp.replace(STATE_FILE)
+    tmp = STATE_FILE.with_name(
+        f".{STATE_FILE.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+    )
+    try:
+        tmp.write_text(json.dumps(state, ensure_ascii=True, sort_keys=True), encoding="utf-8")
+        tmp.replace(STATE_FILE)
+    finally:
+        with suppress(FileNotFoundError):
+            tmp.unlink()
 
 
 def update_usage_state() -> int:
@@ -146,15 +153,14 @@ def update_usage_state() -> int:
     If the kernel stats are unavailable this round, return the last persisted
     value without modifying state — the next round will try again.
     """
-    current_total = read_total_bytes()
-    if current_total is None:
-        state = load_state()
-        return int(state.get("used_bytes", 0)) if state else 0
-
-    current_boot = read_boot_id()
-    period_key = current_period_key()
-
     with state_lock:
+        current_total = read_total_bytes()
+        if current_total is None:
+            state = load_state()
+            return int(state.get("used_bytes", 0)) if state else 0
+
+        current_boot = read_boot_id()
+        period_key = current_period_key()
         state = load_state()
         if not state:
             state = {
