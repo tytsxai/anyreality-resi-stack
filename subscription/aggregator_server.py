@@ -37,10 +37,10 @@ log = logging.getLogger("aggregator")
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "80"))
 TOKEN = os.environ["TOKEN"].strip("/")
-FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/reality-resi-stack/files"))
+FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/anyreality-resi-stack/files"))
 DEFAULT_TARGET = os.environ.get("DEFAULT_TARGET", "profile.yaml")
 CACHE_FILE = Path(os.environ.get(
-    "CACHE_FILE", "/var/lib/reality-resi-stack/usage-cache.json"))
+    "CACHE_FILE", "/var/lib/anyreality-resi-stack/usage-cache.json"))
 CACHE_TTL_SECONDS = float(os.environ.get("CACHE_TTL_SECONDS", "60"))
 REMOTE_POLL_INTERVAL_SECONDS = float(
     os.environ.get("REMOTE_POLL_INTERVAL_SECONDS", CACHE_TTL_SECONDS)
@@ -68,7 +68,7 @@ cache_write_lock = threading.Lock()
 def read_remote_status() -> dict:
     if not REMOTE_STATUS_URL:
         return {}
-    request = Request(REMOTE_STATUS_URL, headers={"User-Agent": "RealityResiStack-Aggregator/1.0"})
+    request = Request(REMOTE_STATUS_URL, headers={"User-Agent": "AnyRealityResiStack-Aggregator/2.0"})
     with urlopen(request, timeout=REMOTE_TIMEOUT_SECONDS) as response:  # noqa: S310
         body = response.read(MAX_REMOTE_STATUS_BYTES + 1)
     if len(body) > MAX_REMOTE_STATUS_BYTES:
@@ -176,7 +176,7 @@ def content_type_for(path: Path) -> str:
 
 
 class AggregatorHandler(BaseHTTPRequestHandler):
-    server_version = "RealityResiStack-Aggregator/1.0"
+    server_version = "AnyRealityResiStack-Aggregator/2.0"
 
     def do_GET(self) -> None:  # noqa: N802
         self.handle_request(send_body=True)

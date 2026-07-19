@@ -7,6 +7,24 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-07-19
+
+> **Project renamed to `anyreality-resi-stack`** (formerly `reality-resi-stack`). GitHub automatically redirects old repository URLs, so existing `curl | bash` install commands keep working. Runtime filesystem paths (`/etc`, `/var/lib`, `/usr/local/lib`, `/var/backups`), systemd unit names, the backup script/archives, and the environment variable (now `ANYREALITY_RESI_STACK_REF`, with the legacy `REALITY_RESI_STACK_REF` still honored) are all renamed to the `anyreality-resi-stack` prefix. Upgrading a v1.x host runs a migration phase (`phase_migrate_legacy_paths`) that moves the old `reality-resi-stack` directories to the new prefix and retires the old backup unit, so existing secrets, usage state, backups, and therefore already-imported clients are preserved.
+>
+> **Breaking — default protocol changed.** Fresh installs now default to **AnyReality (AnyTLS + Reality)** instead of VLESS + Reality + xtls-rprx-vision. Existing servers keep their current protocol until the installer is re-run. AnyReality is sing-box-only; if you rely on Clash/mihomo clients, install (or re-run) with `--protocol vless-vision` to stay on the legacy protocol. Because AnyReality authenticates with a password rather than a UUID/flow and the default subscription file changed from `profile.yaml` to `profile.json`, clients must be re-imported after switching protocols.
+
+### Changed
+
+- **AnyTLS + REALITY (AnyReality) is now the default protocol.** New installs deploy a sing-box `anytls` inbound fronted by Reality, authenticated with a per-server password (`ANYTLS_PASSWORD` in `secrets.env`). AnyTLS's custom padding hardens against TLS-in-TLS fingerprinting while Reality keeps the certless server camouflage. Still no domain or TLS certificate required.
+- The default subscription profile is now a full sing-box client config served as `profile.json` (mixed inbound on `127.0.0.1:2080`, AnyReality outbound, domain-based routing in dual-node mode); the legacy Clash `profile.yaml` is served only under `--protocol vless-vision`.
+- Runtime layout renamed to the `anyreality-resi-stack` prefix: `/etc/anyreality-resi-stack`, `/var/lib/anyreality-resi-stack`, `/usr/local/lib/anyreality-resi-stack`, `/var/backups/anyreality-resi-stack`, `/opt/anyreality-resi-stack`, the `backup-anyreality-resi-stack.sh` script and `anyreality-resi-stack-*.tar.gz` archives, and the `anyreality-resi-stack-backup` systemd units. A new `phase_migrate_legacy_paths` installer phase migrates existing `reality-resi-stack` hosts in place; `uninstall.sh` also cleans up either prefix.
+
+### Added
+
+- `--protocol anytls-reality` (default) / `--protocol vless-vision` (legacy) selects the inbound protocol. VLESS + Reality + xtls-rprx-vision remains fully supported for Clash/mihomo users, which cannot parse AnyReality.
+- AnyReality templates: `templates/singbox/11_anytls-reality_inbounds.json.tmpl` (server inbound), `templates/singbox-client/anytls-outbound.json.tmpl`, and full sing-box client configs `templates/singbox-client/client-single.json.tmpl` / `client-dual.json.tmpl` (dual-node smart routing via sing-box `route` rules).
+- Installers predating AnyReality mint and append an `ANYTLS_PASSWORD` to an existing `secrets.env` on re-run, so switching to `--protocol anytls-reality` works without regenerating the UUID or Reality keypair. Re-running with a different protocol drops the stale inbound and profile file to avoid port collisions or format mismatches.
+
 ### Fixed
 
 - Leaf subscription accounting now samples interface counters while holding the state lock, preventing concurrent requests/background polling from applying stale samples out of order.
@@ -22,14 +40,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- `REALITY_RESI_STACK_REF` lets remote-piped installs fetch a specific branch or tag while defaulting to `main`.
+- `ANYREALITY_RESI_STACK_REF` lets remote-piped installs fetch a specific branch or tag while defaulting to `main`.
 - Standard-library `unittest` coverage for leaf accounting and aggregator cache fallback, wired into `make test` and GitHub Actions.
 - `make mdcheck` now falls back to `npx --yes markdown-link-check` when the binary is not installed globally, retries transient link-checker failures once, and GitHub Actions runs the same Markdown link gate.
 
 ### Security
 
 - Aggregator leaf-status polling now caps each remote status response with `MAX_REMOTE_STATUS_BYTES` (default 64 KiB) before parsing JSON.
-- Subscription systemd units now use basic sandboxing (`NoNewPrivileges`, `PrivateTmp`, `ProtectHome`, `ProtectSystem=strict`) and only keep `/var/lib/reality-resi-stack` writable.
+- Subscription systemd units now use basic sandboxing (`NoNewPrivileges`, `PrivateTmp`, `ProtectHome`, `ProtectSystem=strict`) and only keep `/var/lib/anyreality-resi-stack` writable.
 - Config backups now exclude runtime usage/cache state, set backup directory permissions to `700`, and write archives as `600`.
 
 ## [1.0.3] — 2026-05-19

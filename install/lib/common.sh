@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# common.sh — shared helpers for reality-resi-stack installer modules.
+# common.sh — shared helpers for anyreality-resi-stack installer modules.
 # Sourced by install.sh and other lib/*.sh files. Targets Ubuntu/Debian
 # (bash 4+, GNU coreutils). Not meant to be executed directly.
 

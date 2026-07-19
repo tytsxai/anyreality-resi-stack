@@ -2,7 +2,7 @@
 
 ## Why ship our own subscription server
 
-VLESS+Reality on its own only needs sing-box running on the server — the **subscription server** is an additional layer that publishes the client-side profile (`vless://` link, Clash YAML, sing-box JSON, ...) as HTTP endpoints. Worth writing rather than using an off-the-shelf panel because:
+AnyReality (AnyTLS + Reality, the default protocol) or the legacy VLESS+Reality on its own only needs sing-box running on the server — the **subscription server** is an additional layer that publishes the client-side profile (sing-box JSON, `vless://` link, Clash YAML, ...) as HTTP endpoints. Worth writing rather than using an off-the-shelf panel because:
 
 1. **Clients get "sync subscription" / "update subscription"**: when you later change the node (new IP, new SNI, add a node), clients pick it up on the next refresh — no manual edits on each device.
 2. **Usage cards**: via the `Subscription-Userinfo` response header (v2rayN-community convention), clients render "X used / Y total / expires Z". That requires the server to actually know how much has been used.
@@ -10,6 +10,8 @@ VLESS+Reality on its own only needs sing-box running on the server — the **sub
 4. **Aggregation / HA**: in dual-node setups, the aggregator polls the leaf's `/status` and serves a unified subscription YAML — clients subscribe to a single URL.
 
 Existing tools (3x-ui, Sub-Hub, Sub-Store) either pull in a full admin panel or rely on external workers / Redis. The implementation here is **240 lines of standard-library-only Python** — auditable and dependency-free.
+
+> **The default served profile follows the protocol**: under the default AnyReality (`--protocol anytls-reality`) the server ships a full sing-box config `profile.json` (with a mixed inbound on `127.0.0.1:2080`); under legacy VLESS+Reality (`--protocol vless-vision`) it ships the Clash `profile.yaml`. The subscription server's own logic is unchanged (serve files by token, read NIC counters, usage card, `/healthz`, `/<token>/status`) — only the default filename and the `DEFAULT_TARGET` default change. **AnyReality requires a sing-box-family client; Clash/mihomo does not support it.**
 
 ---
 
@@ -31,8 +33,8 @@ Whether leaf or aggregator, the external contract is the same:
 | Method | Path | Response |
 |---|---|---|
 | `GET`/`HEAD` | `/healthz` | `200 {"ok": true, "service": "<PROFILE_TITLE>"}` |
-| `GET`/`HEAD` | `/<TOKEN>/` | Default subscription file (default `profile.yaml`), with usage-card headers |
-| `GET`/`HEAD` | `/<TOKEN>/<filename>` | Named subscription file (leaf only; aggregator serves only the default) |
+| `GET`/`HEAD` | `/<TOKEN>/` | Default subscription file (AnyReality: `profile.json`; legacy vless-vision: `profile.yaml`; set by `DEFAULT_TARGET`), with usage-card headers |
+| `GET`/`HEAD` | `/<TOKEN>/<filename>` | Named subscription file (leaf only; aggregator serves only the default). `FILE_DIR` may hold several profiles served by filename |
 | `GET`/`HEAD` | `/<TOKEN>/status` | Machine-readable JSON usage summary |
 | anything else | * | `404` |
 
@@ -41,7 +43,7 @@ Whether leaf or aggregator, the external contract is the same:
 ```http
 Profile-Title: US-Resi-01
 Profile-Update-Interval: 24
-Content-Disposition: attachment; filename*=UTF-8''profile.yaml
+Content-Disposition: attachment; filename*=UTF-8''profile.json
 Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=0
 ```
 
@@ -59,7 +61,8 @@ Full reference in `templates/env/subscription-leaf.env.example` and `subscriptio
 |---|---|---|
 | `TOKEN` | ✓ | URL path prefix; the server only answers requests under `/<TOKEN>/` |
 | `INTERFACE` | ✓ | NIC name, used to read `rx_bytes` / `tx_bytes` |
-| `FILE_DIR` | | Directory of profile files (default `/etc/reality-resi-stack/files`) |
+| `FILE_DIR` | | Directory of profile files (default `/etc/anyreality-resi-stack/files`); may hold several profiles |
+| `DEFAULT_TARGET` | | Filename returned by `/<TOKEN>/`, default `profile.json` (set to `profile.yaml` for legacy vless-vision) |
 | `STATE_FILE` | | Persistent billing-period counter |
 | `USAGE_OFFSET_BYTES` | | Calibration baseline (use this when the counter starts mid-month) |
 | `BILLING_CYCLE_DAY` | | Provider reset day, default `1` for calendar months |
@@ -148,9 +151,9 @@ This keeps abandoned or very slow subscription clients from holding the public
 Run locally without systemd (for development):
 
 ```bash
-cd /opt/reality-resi-stack/subscription
+cd /opt/anyreality-resi-stack/subscription
 export TOKEN=test FILE_DIR=$(mktemp -d) INTERFACE=lo
-echo 'foo: bar' > "$FILE_DIR/profile.yaml"
+echo '{"foo": "bar"}' > "$FILE_DIR/profile.json"
 python3 leaf_server.py
 # another terminal:
 curl -i http://127.0.0.1:80/healthz

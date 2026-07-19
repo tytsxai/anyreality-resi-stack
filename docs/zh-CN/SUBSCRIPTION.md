@@ -2,7 +2,7 @@
 
 ## 为什么自写订阅服务
 
-VLESS+Reality 协议本身只需要服务端跑 sing-box 就够了，**订阅服务**是一层附加：把 `vless://` 链接、Clash YAML、sing-box JSON 等客户端配置文件，以 HTTP 端点形式发出去。值得自写、不用现成方案，是因为：
+AnyReality（AnyTLS + Reality，默认协议）或遗留的 VLESS+Reality 协议本身只需要服务端跑 sing-box 就够了，**订阅服务**是一层附加：把 sing-box JSON、`vless://` 链接、Clash YAML 等客户端配置文件，以 HTTP 端点形式发出去。值得自写、不用现成方案，是因为：
 
 1. **客户端会"同步/更新订阅"**：以后改了节点信息（换 IP、改 SNI、加节点），客户端拉一下就生效，不用每个设备重新粘贴。
 2. **流量卡片**：通过 `Subscription-Userinfo` 响应头（这是 v2rayN 圈子约定的格式），客户端可以显示"已用 X / 总量 Y / 到期 Z"。前提是服务端实时知道用了多少。
@@ -10,6 +10,8 @@ VLESS+Reality 协议本身只需要服务端跑 sing-box 就够了，**订阅服
 4. **聚合 / 高可用**：双节点场景下，aggregator 节点轮询 leaf 的 `/status`，输出统一订阅 YAML —— 客户端只需要订阅一个 URL。
 
 现成方案（3x-ui、Sub-Hub、Sub-Store）要么把面板和后台塞一起、要么依赖外部 worker/Redis。这个仓库的实现是 **240 行 Python 标准库零依赖**，行为可读、可审计。
+
+> **默认服务的档案文件跟随协议**：默认协议 AnyReality（`--protocol anytls-reality`）下发的是完整 sing-box 配置 `profile.json`（含 mixed 入站 `127.0.0.1:2080`）；遗留协议 VLESS+Reality（`--protocol vless-vision`）下发的是 Clash 的 `profile.yaml`。订阅服务器本身的逻辑不变（按 token 提供文件、读网卡计数、流量卡片、`/healthz`、`/<token>/status`），变的只是默认档案文件名与 `DEFAULT_TARGET` 的默认值。**AnyReality 只能用 sing-box 系客户端，Clash/mihomo 不支持。**
 
 ---
 
@@ -45,8 +47,8 @@ flowchart TB
 | 方法 | 路径 | 响应 |
 |---|---|---|
 | `GET`/`HEAD` | `/healthz` | `200 {"ok": true, "service": "<PROFILE_TITLE>"}` |
-| `GET`/`HEAD` | `/<TOKEN>/` | 默认订阅文件（默认 `profile.yaml`），带流量卡片响应头 |
-| `GET`/`HEAD` | `/<TOKEN>/<filename>` | 命名订阅文件（仅 leaf 支持；aggregator 只服务默认文件） |
+| `GET`/`HEAD` | `/<TOKEN>/` | 默认订阅文件（AnyReality 默认 `profile.json`，遗留 vless-vision 为 `profile.yaml`，由 `DEFAULT_TARGET` 决定），带流量卡片响应头 |
+| `GET`/`HEAD` | `/<TOKEN>/<filename>` | 命名订阅文件（仅 leaf 支持；aggregator 只服务默认文件）。`FILE_DIR` 里可同时放多个档案，客户端按文件名请求 |
 | `GET`/`HEAD` | `/<TOKEN>/status` | 机器可读 JSON 用量摘要 |
 | 其它 | * | `404` |
 
@@ -55,7 +57,7 @@ flowchart TB
 ```http
 Profile-Title: US-Resi-01
 Profile-Update-Interval: 24
-Content-Disposition: attachment; filename*=UTF-8''profile.yaml
+Content-Disposition: attachment; filename*=UTF-8''profile.json
 Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=0
 ```
 
@@ -73,7 +75,8 @@ Subscription-Userinfo: upload=0; download=10485760; total=1063004405760; expire=
 |---|---|---|
 | `TOKEN` | ✓ | 订阅 URL 的路径前缀；客户端命中 `/<TOKEN>/` 才返回订阅 |
 | `INTERFACE` | ✓ | 网卡名，用于读 `rx_bytes` / `tx_bytes` |
-| `FILE_DIR` | | 订阅文件目录（默认 `/etc/reality-resi-stack/files`） |
+| `FILE_DIR` | | 订阅文件目录（默认 `/etc/anyreality-resi-stack/files`），可同时放多个档案文件 |
+| `DEFAULT_TARGET` | | `/<TOKEN>/` 返回的默认档案文件名，默认 `profile.json`（遗留 vless-vision 应设为 `profile.yaml`） |
 | `STATE_FILE` | | 账期累计状态持久化文件 |
 | `USAGE_OFFSET_BYTES` | | 校准基线：当流量计数器从月中接管时填这里 |
 | `BILLING_CYCLE_DAY` | | 商家流量重置日，默认 `1` 表示自然月 |
@@ -159,9 +162,9 @@ journalctl -u subscription-aggregator -n 50 --no-pager
 本地不装 systemd 直接跑（开发用）：
 
 ```bash
-cd /opt/reality-resi-stack/subscription
+cd /opt/anyreality-resi-stack/subscription
 export TOKEN=test FILE_DIR=$(mktemp -d) INTERFACE=lo
-echo 'foo: bar' > "$FILE_DIR/profile.yaml"
+echo '{"foo": "bar"}' > "$FILE_DIR/profile.json"
 python3 leaf_server.py
 # 另一个终端:
 curl -i http://127.0.0.1:80/healthz

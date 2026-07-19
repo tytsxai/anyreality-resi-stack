@@ -2,7 +2,7 @@
 
 ## Threat model | 威胁模型
 
-`reality-resi-stack` is a personal / small-team self-hosted proxy toolkit. Its threat model is:
+`anyreality-resi-stack` is a personal / small-team self-hosted proxy toolkit. Its threat model is:
 
 | In scope | Out of scope |
 |---|---|
@@ -25,7 +25,7 @@ This is a tool for individuals running their own VPS, not a hardened enterprise 
 - Detecting unknown UUID-shape strings and 43-character base64url strings (the shape of Curve25519 Reality keys) that aren't in the placeholder allowlist.
 - Rejecting forbidden filename patterns at PR time.
 
-If you discover a credential leak, **do not** open a public issue. Instead, [open a draft security advisory](https://github.com/tytsxai/reality-resi-stack/security/advisories/new).
+If you discover a credential leak, **do not** open a public issue. Instead, [open a draft security advisory](https://github.com/tytsxai/anyreality-resi-stack/security/advisories/new).
 
 ## Reporting vulnerabilities | 漏洞上报
 

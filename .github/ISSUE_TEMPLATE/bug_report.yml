@@ -24,7 +24,7 @@ body:
   - type: input
     id: repo_version
     attributes:
-      label: reality-resi-stack version (git rev or tag)
+      label: anyreality-resi-stack version (git rev or tag)
     validations:
       required: true
   - type: textarea

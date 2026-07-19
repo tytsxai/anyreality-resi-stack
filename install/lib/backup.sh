@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # backup.sh — install a daily systemd timer that tarballs configuration
-# (NOT logs, NOT runtime state). It includes /etc/reality-resi-stack for
+# (NOT logs, NOT runtime state). It includes /etc/anyreality-resi-stack for
 # rollback, so backup archives are sensitive and must not be shared publicly.
 
 # shellcheck source=./common.sh
@@ -12,13 +12,13 @@
 phase_backup() {
   step "Installing daily config backup timer"
 
-  write_file /usr/local/sbin/backup-reality-resi-stack.sh 0755 <<'EOF'
+  write_file /usr/local/sbin/backup-anyreality-resi-stack.sh 0755 <<'EOF'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-BACKUP_DIR=/var/backups/reality-resi-stack
+BACKUP_DIR=/var/backups/anyreality-resi-stack
 STAMP="$(date +%Y-%m-%d-%H%M%S)"
-OUT="$BACKUP_DIR/reality-resi-stack-${STAMP}.tar.gz"
+OUT="$BACKUP_DIR/anyreality-resi-stack-${STAMP}.tar.gz"
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
@@ -35,17 +35,17 @@ trap 'rm -rf "$TMP"' EXIT
 } > "$TMP/manifest.txt"
 
 tar -czf "$OUT" -C / --ignore-failed-read \
-  --exclude=var/lib/reality-resi-stack/usage-state.json \
-  --exclude=var/lib/reality-resi-stack/usage-cache.json \
-  --exclude='var/lib/reality-resi-stack/*.tmp' \
-  --exclude='var/lib/reality-resi-stack/.*.tmp' \
+  --exclude=var/lib/anyreality-resi-stack/usage-state.json \
+  --exclude=var/lib/anyreality-resi-stack/usage-cache.json \
+  --exclude='var/lib/anyreality-resi-stack/*.tmp' \
+  --exclude='var/lib/anyreality-resi-stack/.*.tmp' \
   etc/sing-box \
   etc/systemd/system/sing-box.service \
   etc/systemd/system/subscription-leaf.service \
   etc/systemd/system/subscription-aggregator.service \
-  etc/reality-resi-stack \
-  usr/local/lib/reality-resi-stack \
-  var/lib/reality-resi-stack \
+  etc/anyreality-resi-stack \
+  usr/local/lib/anyreality-resi-stack \
+  var/lib/anyreality-resi-stack \
   etc/ufw \
   etc/fail2ban \
   etc/sysctl.d \
@@ -54,17 +54,17 @@ tar -czf "$OUT" -C / --ignore-failed-read \
 chmod 600 "$OUT"
 
 # Retain only the 3 most recent backups.
-find "$BACKUP_DIR" -name 'reality-resi-stack-*.tar.gz' -type f \
+find "$BACKUP_DIR" -name 'anyreality-resi-stack-*.tar.gz' -type f \
   | sort | head -n -3 | xargs -r rm -f
 
 echo "$OUT"
 EOF
 
   run cp "$REPO_ROOT/templates/systemd/config-backup.service" \
-    /etc/systemd/system/reality-resi-stack-backup.service
+    /etc/systemd/system/anyreality-resi-stack-backup.service
   run cp "$REPO_ROOT/templates/systemd/config-backup.timer" \
-    /etc/systemd/system/reality-resi-stack-backup.timer
+    /etc/systemd/system/anyreality-resi-stack-backup.timer
   run systemctl daemon-reload
-  run systemctl enable --now reality-resi-stack-backup.timer
+  run systemctl enable --now anyreality-resi-stack-backup.timer
   ok "Backup timer installed"
 }

@@ -64,11 +64,77 @@ EOF
   fi
 }
 
+# gen_anytls_password — mint a random AnyTLS password (base64, url-safe enough
+# for env/JSON). Falls back to uuidgen when openssl is unavailable.
+gen_anytls_password() {
+  openssl rand -base64 24 2>/dev/null || uuidgen
+}
+
+# _migrate_dir <old> <new> — move a legacy dir to its new prefix, only when the
+# new destination does not yet exist (never clobber an already-migrated host).
+_migrate_dir() {
+  local src="$1" dst="$2"
+  [[ -e "$src" ]] || return 0
+  if [[ -e "$dst" ]]; then
+    warn "Both $src and $dst exist — leaving $src untouched (review manually)"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dst")"
+  mv "$src" "$dst"
+  info "moved $src -> $dst"
+}
+
+# ── Migrate legacy reality-resi-stack paths → anyreality-resi-stack ───────
+# v1.x installed under the reality-resi-stack prefix. When upgrading such a
+# host in place, relocate secrets/state/backups and drop the old backup unit
+# so the renamed v2 layout reuses the existing UUID / Reality keys instead of
+# regenerating them (which would break every already-imported client).
+phase_migrate_legacy_paths() {
+  local legacy=(
+    /etc/reality-resi-stack
+    /var/lib/reality-resi-stack
+    /usr/local/lib/reality-resi-stack
+    /var/backups/reality-resi-stack
+    /usr/local/sbin/backup-reality-resi-stack.sh
+    /etc/systemd/system/reality-resi-stack-backup.service
+    /etc/systemd/system/reality-resi-stack-backup.timer
+  )
+  local present=0 p
+  for p in "${legacy[@]}"; do
+    [[ -e "$p" ]] && present=1
+  done
+  [[ "$present" == "1" ]] || return 0
+
+  step "Migrating legacy reality-resi-stack layout to anyreality-resi-stack"
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    info "[dry] would stop the legacy backup unit, remove old unit/script, and move"
+    info "[dry]   /etc, /var/lib, /usr/local/lib, /var/backups dirs to the anyreality-resi-stack prefix"
+    return 0
+  fi
+
+  # Retire the renamed backup unit/script (subscription and sing-box units keep
+  # the same names, so they are simply overwritten by the later phases).
+  for unit in reality-resi-stack-backup.timer reality-resi-stack-backup.service; do
+    systemctl disable --now "$unit" >/dev/null 2>&1 || true
+    rm -f "/etc/systemd/system/$unit"
+  done
+  rm -f /usr/local/sbin/backup-reality-resi-stack.sh
+
+  _migrate_dir /etc/reality-resi-stack /etc/anyreality-resi-stack
+  _migrate_dir /var/lib/reality-resi-stack /var/lib/anyreality-resi-stack
+  _migrate_dir /usr/local/lib/reality-resi-stack /usr/local/lib/anyreality-resi-stack
+  _migrate_dir /var/backups/reality-resi-stack /var/backups/anyreality-resi-stack
+
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  ok "Legacy layout migrated to anyreality-resi-stack (existing keys preserved)"
+}
+
 # ── Generate keys (writes secrets.env) ───────────────────────────────────
 phase_generate_keys() {
   step "Generating per-server secrets"
 
-  local secrets=/etc/reality-resi-stack/secrets.env
+  local secrets=/etc/anyreality-resi-stack/secrets.env
 
   if [[ -f "$secrets" ]]; then
     info "Secrets already exist at $secrets — reusing (will not regenerate)"
@@ -77,19 +143,28 @@ phase_generate_keys() {
       . "$secrets"
       : "${UUID:?}" "${REALITY_PRIVATE_KEY:?}" "${REALITY_PUBLIC_KEY:?}" "${SUB_TOKEN:?}"
       SHORT_ID="${SHORT_ID:-}"
-      export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID
+      # Backward-compat: installs predating AnyReality have no ANYTLS_PASSWORD.
+      # Mint one and append so switching to --protocol anytls-reality just works,
+      # without disturbing the existing UUID / Reality keypair.
+      if [[ -z "${ANYTLS_PASSWORD:-}" ]]; then
+        ANYTLS_PASSWORD="$(gen_anytls_password)"
+        printf 'ANYTLS_PASSWORD=%s\n' "$ANYTLS_PASSWORD" >>"$secrets"
+        info "Added ANYTLS_PASSWORD to existing secrets.env"
+      fi
+      export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID ANYTLS_PASSWORD
     fi
     return 0
   fi
 
   if [[ "$DRY_RUN" == "1" ]]; then
-    info "[dry] would write $secrets with new UUID, Reality keypair, SUB_TOKEN"
+    info "[dry] would write $secrets with new UUID, Reality keypair, SUB_TOKEN, ANYTLS_PASSWORD"
     UUID="00000000-0000-0000-0000-000000000000"
     REALITY_PRIVATE_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     REALITY_PUBLIC_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
     SUB_TOKEN="example-token-do-not-use"
     SHORT_ID=""
-    export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID
+    ANYTLS_PASSWORD="example-anytls-password-do-not-use"
+    export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID ANYTLS_PASSWORD
     return 0
   fi
 
@@ -103,6 +178,7 @@ phase_generate_keys() {
   REALITY_PUBLIC_KEY="$pub"
   SUB_TOKEN="$(uuidgen)"
   SHORT_ID="${SHORT_ID:-}"
+  ANYTLS_PASSWORD="$(gen_anytls_password)"
 
   mkdir -p "$(dirname "$secrets")"
   {
@@ -111,11 +187,12 @@ phase_generate_keys() {
     printf 'REALITY_PUBLIC_KEY=%s\n' "$REALITY_PUBLIC_KEY"
     printf 'SUB_TOKEN=%s\n' "$SUB_TOKEN"
     printf 'SHORT_ID=%s\n' "$SHORT_ID"
+    printf 'ANYTLS_PASSWORD=%s\n' "$ANYTLS_PASSWORD"
   } >"$secrets"
   chmod 600 "$secrets"
   ok "Secrets written to $secrets (mode 600)"
 
-  export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID
+  export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID ANYTLS_PASSWORD
 }
 
 # ── Render configuration ─────────────────────────────────────────────────
@@ -124,6 +201,7 @@ phase_configure_singbox() {
 
   : "${UUID:?}" "${REALITY_PRIVATE_KEY:?}" "${SNI:?}" "${INBOUND_PORT:?}"
   : "${SHORT_ID=}"
+  local protocol="${PROTOCOL:-anytls-reality}"
 
   local conf=/etc/sing-box/conf
   run mkdir -p "$conf" /etc/sing-box/logs
@@ -135,10 +213,25 @@ phase_configure_singbox() {
   run cp "$tpl/05_dns.json" "$conf/05_dns.json"
   run cp "$tpl/06_ntp.json" "$conf/06_ntp.json"
 
-  render_template \
-    "$tpl/11_xtls-reality_inbounds.json.tmpl" \
-    "$conf/11_xtls-reality_inbounds.json" \
-    0644
+  # sing-box loads every *.json under conf/. Two Reality inbounds on the same
+  # port would collide, so drop any previously-rendered inbound before writing
+  # the one the selected protocol needs (idempotent protocol switch).
+  run rm -f "$conf/11_xtls-reality_inbounds.json" "$conf/11_anytls-reality_inbounds.json"
+
+  if [[ "$protocol" == "vless-vision" ]]; then
+    render_template \
+      "$tpl/11_xtls-reality_inbounds.json.tmpl" \
+      "$conf/11_xtls-reality_inbounds.json" \
+      0644
+    info "Inbound protocol: VLESS + Reality + xtls-rprx-vision (legacy)"
+  else
+    : "${ANYTLS_PASSWORD:?}"
+    render_template \
+      "$tpl/11_anytls-reality_inbounds.json.tmpl" \
+      "$conf/11_anytls-reality_inbounds.json" \
+      0644
+    info "Inbound protocol: AnyTLS + Reality (AnyReality, default)"
+  fi
 
   # IPv6 dead-route guard. On hosts with NO public IPv6 default route, any
   # client-passed IPv6 literal target is unreachable and otherwise spams

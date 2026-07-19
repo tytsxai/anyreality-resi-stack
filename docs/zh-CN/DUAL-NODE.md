@@ -32,7 +32,7 @@ Telegram、Discord 等即时通讯服务的反滥用系统会跟踪 IP 段的历
 
 ## 解决方案：按域名分流
 
-`reality-resi-stack` 的核心设计就是：**承认住宅 IP 不是万能的，按域名把流量送到合适的出口**。
+`anyreality-resi-stack` 的核心设计就是：**承认住宅 IP 不是万能的，按域名把流量送到合适的出口**。
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,30 @@ flowchart LR
     Other --> Resi
 ```
 
-具体规则就在 `templates/clash/client-dual.yaml.tmpl` 里，可以直接看源码。摘录核心段：
+默认协议 AnyReality 下，双节点订阅返回的是**完整的 sing-box 客户端配置（`profile.json`）**：两个 `anytls` outbound（住宅节点 + 数据中心节点）加一套 sing-box `route` 规则。分流是**静态规则表**，直接把域名/IP 映射到某个出口，而不是 Clash 的 `url-test` 测速分组。完整示例见 [`examples/dual-node/sing-box-client-dual.json`](../../examples/dual-node/sing-box-client-dual.json)，摘录核心段：
+
+```json
+"route": {
+  "rules": [
+    { "ip_is_private": true, "outbound": "direct" },
+
+    // 住宅 IP 是优势 → 路由到住宅节点
+    { "domain_suffix": ["openai.com", "chatgpt.com", "anthropic.com",
+        "claude.ai", "googleapis.com", "gemini.google.com", "netflix.com"],
+      "outbound": "US-Resi-01" },
+
+    // 住宅 IP 在这些服务上常被降权 → 路由到数据中心节点
+    { "domain_suffix": ["telegram.org", "t.me", "telegram.me",
+        "discord.com", "discord.gg"],
+      "outbound": "US-DC-01" },
+    { "ip_cidr": ["91.108.4.0/22", "91.108.16.0/22", "149.154.160.0/20"],
+      "outbound": "US-DC-01" }
+  ],
+  "final": "US-Resi-01"
+}
+```
+
+遗留协议 vless-vision 仍走 Clash：订阅返回 `profile.yaml`，用 Clash 的 `proxy-groups` + `rules` 表达分流。规则源码在 `templates/clash/client-dual.yaml.tmpl`，摘录核心段：
 
 ```yaml
 rules:
@@ -88,13 +111,14 @@ rules:
 ### 第 1 步：在 leaf 上记下住宅节点信息
 
 ```bash
-grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env
-grep ^UUID /etc/reality-resi-stack/secrets.env
-grep ^REALITY_PUBLIC_KEY /etc/reality-resi-stack/secrets.env
+grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env
+grep ^ANYTLS_PASSWORD /etc/anyreality-resi-stack/secrets.env   # 默认 AnyReality 用
+grep ^UUID /etc/anyreality-resi-stack/secrets.env              # 遗留 vless-vision 用
+grep ^REALITY_PUBLIC_KEY /etc/anyreality-resi-stack/secrets.env
 ip route get 1.1.1.1 | grep -oP 'src \K\S+'   # leaf 的公网 IP
 ```
 
-得到 leaf 的 `SUB_TOKEN`、`UUID`、`REALITY_PUBLIC_KEY` 和公网 IP。不要把 `REALITY_PRIVATE_KEY` 复制到备用节点，也不要把这些值贴到公开 issue。
+得到 leaf 的 `SUB_TOKEN`、`REALITY_PUBLIC_KEY`、公网 IP，以及认证凭据：默认 AnyReality 取 `ANYTLS_PASSWORD`，遗留 vless-vision 取 `UUID`。不要把 `REALITY_PRIVATE_KEY` 复制到备用节点，也不要把这些值贴到公开 issue。
 
 ### 第 2 步：在备用数据中心 VPS 上跑
 
@@ -104,6 +128,7 @@ RESI_SERVER_IP=<LEAF_IP>
 RESI_UUID=<LEAF_UUID>
 RESI_REALITY_PUBLIC_KEY=<LEAF_REALITY_PUBLIC_KEY>
 RESI_NODE_NAME=US-Resi-01
+RESI_ANYTLS_PASSWORD=<LEAF_ANYTLS_PASSWORD>
 RESI_SNI=addons.mozilla.org
 RESI_INBOUND_PORT=443
 EOF
@@ -116,12 +141,14 @@ bash <(curl -fsSL .../install.sh) \
 ```
 
 aggregator 模式会：
-- 装 sing-box（数据中心节点本身的 VLESS 入站）
+- 装 sing-box（数据中心节点自身的入站；默认 AnyReality 的 AnyTLS 入站，遗留则为 VLESS 入站）
 - 装 aggregator 订阅服务
-- 渲染双节点 Clash YAML（包含两个 proxies + 上面那套智能分流规则）
+- 渲染双节点客户端订阅（默认 AnyReality → sing-box `profile.json`，含两个 `anytls` outbound + 上面那套 sing-box route 规则；遗留 vless-vision → Clash `profile.yaml`）
 - 配置缓存回退
 
-`RESI_*` 变量用于把住宅节点写进 aggregator 返回的客户端订阅；备用数据中心节点的 `DC_*` 值默认由本次安装新生成的 UUID、Reality public key、`--node-name` 和本机公网 IP 派生。缺少 `RESI_SERVER_IP`、`RESI_UUID`、`RESI_REALITY_PUBLIC_KEY` 或 `RESI_NODE_NAME` 时，安装器会直接停止，避免生成半坏订阅。
+`RESI_*` 变量用于把住宅节点写进 aggregator 返回的客户端订阅。默认 AnyReality 下，聚合器需要住宅节点的 **AnyTLS 密码**，即第 1 步在 leaf 上取到的 `ANYTLS_PASSWORD`，通过 `RESI_ANYTLS_PASSWORD` 提供（`--config` 文件或环境变量均可）；备用数据中心节点自身的密码默认取本机 `ANYTLS_PASSWORD`。缺少 `RESI_SERVER_IP`、`RESI_UUID`、`RESI_REALITY_PUBLIC_KEY`、`RESI_NODE_NAME`（以及 AnyReality 下的 `RESI_ANYTLS_PASSWORD`）时，安装器会直接停止，避免生成半坏订阅。
+
+> 遗留 vless-vision 用 UUID 认证，不需要 `RESI_ANYTLS_PASSWORD`；数据中心节点的 `DC_*` 值默认由本次安装新生成的 UUID、Reality public key、`--node-name` 和本机公网 IP 派生。
 
 ### 第 3 步：客户端只订阅 aggregator 的 URL
 
@@ -129,7 +156,7 @@ aggregator 模式会：
 http://<DC_IP>/<AGGREGATOR_SUB_TOKEN>/
 ```
 
-把这个 URL 给所有客户端。订阅返回的 YAML 同时含两个节点和分流规则，客户端**不需要做任何额外配置**。
+把这个 URL 给所有客户端。订阅返回的配置（默认 AnyReality 为 `profile.json`，遗留为 `profile.yaml`）同时含两个节点和分流规则，客户端**不需要做任何额外配置**。用与协议匹配的客户端导入：AnyReality 用 sing-box 系客户端，遗留 vless-vision 用 Clash 系客户端。
 
 ---
 
@@ -172,7 +199,7 @@ aggregator 自己消耗的数据中心节点流量不会出现在卡片里，要
 - **GitHub / npm**：路由到 DC（GitHub 对住宅 IP 的 rate-limit 比数据中心 IP 严）
 - **Reddit / Twitter**：路由到 DC（住宅 IP 段被 anti-bot 系统标记的概率更高）
 
-修改 `/etc/reality-resi-stack/files/profile.yaml` 的 `rules:` 段后，**重启 aggregator 服务**（让模板重新渲染）或直接编辑：
+默认 AnyReality 改 `/etc/anyreality-resi-stack/files/profile.json` 的 `route.rules`（加 `domain_suffix` 到对应 `outbound`）；遗留 vless-vision 改 `/etc/anyreality-resi-stack/files/profile.yaml` 的 `rules:` 段。改完 **重启 aggregator 服务**（让模板重新渲染）：
 
 ```bash
 sudo systemctl restart subscription-aggregator

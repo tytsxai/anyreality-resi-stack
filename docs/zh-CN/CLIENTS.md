@@ -1,12 +1,28 @@
 # 客户端导入 | Client import
 
-安装完成后，服务器会给你一个 `vless://` 链接或者一个订阅 URL（如果启用了 `--with-subscription`）。
+> **默认协议已切换为 AnyReality（AnyTLS + REALITY）。** 安装器默认 `--protocol anytls-reality`；旧的 VLESS + Reality + xtls-rprx-vision 变成遗留可选项 `--protocol vless-vision`。两者的取舍：AnyReality 抗检测更强（AnyTLS 自定义填充让 TLS-in-TLS 更难被针对，Reality 补齐服务端伪装），但只被 sing-box 系客户端支持；vless-vision 抗检测稍弱，但兼容 Clash 系客户端。两者都无需域名/证书。
 
-**强烈推荐用订阅 URL，不用 vless:// 直接粘贴。** 原因：以后改节点、加节点、换 IP，订阅一键同步；vless:// 粘贴的客户端要全手动改。
+安装完成后，服务器会给你一个订阅 URL（如果启用了 `--with-subscription`），或者——仅在遗留 `vless-vision` 下——一个 `vless://` 链接。
+
+**订阅 URL 本身不变，变的是它返回的内容：**
+
+- 默认 AnyReality → 返回完整 sing-box 配置 `profile.json`，用支持 AnyReality 的 sing-box 系客户端导入。
+- 遗留 vless-vision → 返回 Clash YAML `profile.yaml`，用 Clash 系客户端导入。`vless://` 分享链接也只适用于 vless-vision。
+
+**强烈推荐用订阅 URL，不用手动粘贴。** 原因：以后改节点、加节点、换 IP，订阅一键同步；手动粘贴的客户端要全手动改。
 
 ---
 
-## 各客户端最低支持版本
+## 哪些客户端支持 AnyReality（默认协议）
+
+- **支持 AnyReality**：sing-box 官方 App（SFA Android / SFI iOS / SFM macOS）、Karing、Hiddify（较新版本）、NekoBox / nekoray（较新版本）。这些直接导入默认订阅返回的 `profile.json`。
+- **只支持遗留 VLESS + Vision**：Clash Verge / Verge Rev、mihomo / Clash.Meta、Stash、以及走 Clash 订阅的 Shadowrocket。**Clash / mihomo 不支持 AnyReality。** 要用这些客户端，服务端必须用 `--protocol vless-vision` 部署（订阅返回 `profile.yaml`）。
+
+---
+
+## 各客户端最低支持版本（遗留 vless-vision 路径）
+
+> 下表针对遗留 `--protocol vless-vision` 部署（Clash 系客户端）。默认 AnyReality 路径请看上面「哪些客户端支持 AnyReality」和下面「sing-box 系客户端」两节。
 
 | 客户端 | 平台 | 最低版本 | 支持 Reality | 支持 xtls-rprx-vision | 支持流量卡片 |
 |---|---|---|---|---|---|
@@ -29,7 +45,7 @@
 1. 下载最新版 [v2rayN](https://github.com/2dust/v2rayN/releases)
 2. 打开 → `订阅` → `订阅设置` → `添加`
 3. 填：
-   - 备注：`reality-resi-stack`
+   - 备注：`anyreality-resi-stack`
    - 地址：你的订阅 URL（`http://你的服务器/你的token`）
 4. 确定 → 右键节点 → `订阅` → `更新订阅`
 5. 选中节点 → `Ctrl+T` 测延迟
@@ -72,17 +88,36 @@
    - 或：`设置` → `订阅设置` → 添加订阅 URL → 更新
 3. 选中节点 → 主页底部启动按钮
 
+> 注：这里的 `vless://` 与 v2rayNG 都属于遗留 vless-vision 路径。默认 AnyReality 下请用较新版 NekoBox / nekoray 走订阅（返回 sing-box `profile.json`），v2rayNG 不支持 AnyReality。
+
 ---
 
-## sing-box 移动端（Android / iOS）
+## sing-box 系客户端（AnyReality 默认路径，推荐）
 
-最干净的体验，但配置体验稍硬核。
+默认协议 AnyReality 就是给这条路径准备的。sing-box 官方 App（SFA / SFI / SFM）、Karing、Hiddify、NekoBox 等都能直接导入默认订阅返回的 sing-box `profile.json`。
 
-1. App Store / Play / GitHub Releases 下载 sing-box
-2. `配置` → 新建 → 粘贴 `examples/single-node/sing-box-client-outbound.json` 模板（替换为你自己的真实值）
-3. 主页启动
+**订阅方式（推荐）：**
 
-订阅模式：sing-box 客户端原生支持订阅 URL，但需要把订阅服务返回的内容用 sing-box JSON schema 而不是 Clash YAML。本仓库默认订阅服务输出 Clash YAML，所以建议 sing-box 客户端用户用手动粘贴的方式。
+1. App Store / Play / GitHub Releases 装 sing-box 官方 App（或 Karing / Hiddify / NekoBox）
+2. `配置` → 新建 → 选订阅 URL 类型，粘贴你的订阅 URL
+3. 更新订阅 → 主页启动
+
+默认订阅返回的就是完整 sing-box JSON（`profile.json`），无需再手动改 schema。
+
+**手动导入 AnyReality 凭据（不走订阅时）：**
+
+`配置` → 新建 → 按下面字段手填一个 `anytls` outbound（用你自己的真实值）：
+
+- `type` = `anytls`
+- `server` = 你的服务器 IP
+- `port`（`server_port`）= 入站端口
+- `password` = `<ANYTLS_PASSWORD>`（AnyReality 用密码认证，无 UUID / flow）
+- `tls.server_name` = `<SNI>`
+- `tls.utls.fingerprint` = `chrome`
+- `tls.reality.public_key` = `<REALITY_PUBLIC_KEY>`
+- `tls.reality.short_id` = `<SHORT_ID>`
+
+完整可参考的示例配置见 `examples/single-node/sing-box-client-config.json`。
 
 ---
 
@@ -114,7 +149,7 @@ curl -i https://api.openai.com/v1/models
 
 ## 双节点客户端的导入差异
 
-双节点部署后，订阅 URL 返回的 Clash YAML 已经包含**两个节点 + 智能分流规则**。客户端导入流程跟单节点完全一样，**不需要任何额外配置**。
+双节点部署后，订阅 URL 返回的配置（默认 AnyReality 为 sing-box `profile.json`，遗留 vless-vision 为 Clash `profile.yaml`）已经包含**两个节点 + 智能分流规则**。客户端导入流程跟单节点完全一样，**不需要任何额外配置**。
 
 导入后客户端会自动看到：
 

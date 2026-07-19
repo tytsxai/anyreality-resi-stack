@@ -36,7 +36,7 @@ PORT = int(os.environ.get("PORT", "80"))
 TOKEN = os.environ["TOKEN"].strip("/")
 INTERFACE = os.environ.get("INTERFACE", "eth0")
 STATE_FILE = Path(os.environ.get(
-    "STATE_FILE", "/var/lib/reality-resi-stack/usage-state.json"))
+    "STATE_FILE", "/var/lib/anyreality-resi-stack/usage-state.json"))
 TOTAL_BYTES = int(os.environ.get("TOTAL_BYTES", "0"))
 USAGE_OFFSET_BYTES = int(os.environ.get("USAGE_OFFSET_BYTES", "0"))
 EXPIRE_TS = int(os.environ.get("EXPIRE_TS", "0"))
@@ -49,7 +49,7 @@ COUNT_CURRENT_BOOT_ON_INIT = os.environ.get("COUNT_CURRENT_BOOT_ON_INIT", "true"
 }
 PROFILE_TITLE = os.environ.get("PROFILE_TITLE", "Reality-Residential")
 UPDATE_INTERVAL_HOURS = os.environ.get("UPDATE_INTERVAL_HOURS", "24")
-FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/reality-resi-stack/files"))
+FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/anyreality-resi-stack/files"))
 DEFAULT_TARGET = os.environ.get("DEFAULT_TARGET", "profile.yaml")
 REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "10"))
 
@@ -224,7 +224,7 @@ def content_type_for(path: Path) -> str:
 
 
 class SubscriptionHandler(BaseHTTPRequestHandler):
-    server_version = "RealityResiStack-Leaf/1.0"
+    server_version = "AnyRealityResiStack-Leaf/2.0"
 
     def do_GET(self) -> None:  # noqa: N802
         self.handle_request(send_body=True)

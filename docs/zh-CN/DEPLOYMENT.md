@@ -1,11 +1,20 @@
 # 部署 | Deployment
 
-本文档讲清楚从一台空白 Ubuntu/Debian VPS 到 VLESS+Reality 节点上线的完整流程。两种走法：
+本文档讲清楚从一台空白 Ubuntu/Debian VPS 到节点上线的完整流程。两种走法：
 
 - **快速路径**：一行 `bash <(curl ...)` 调用 `install/install.sh`，由它自动完成全部步骤。适合 99% 的情况。
 - **手动路径**：把 `install/lib/*.sh` 里的命令逐节贴在 shell 里执行。适合想理解每一步在做什么的人，或在受限网络里需要插队的人。
 
 两种走法产出的服务器**完全等价**。
+
+### 协议选择：AnyReality（默认）vs VLESS-Vision（遗留）
+
+安装器用 `--protocol` 开关（配置变量 `PROTOCOL`）在两种协议之间切换：
+
+- **`--protocol anytls-reality`（默认）**：AnyTLS + REALITY，简称 **AnyReality**。底层是 sing-box 的 `anytls` 入站叠加 `tls.reality`。AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 提供服务端伪装（无需证书），在抗检测维度上比纯 VLESS+Reality 更强。认证用每台服务器随机生成的**密码**（`ANYTLS_PASSWORD`），没有 UUID/flow。
+- **`--protocol vless-vision`（遗留）**：VLESS + Reality + xtls-rprx-vision，用 UUID + `flow` 认证。仍完整支持，主要留给需要 Clash/mihomo 的用户。
+
+⚠️ **AnyReality 只有 sing-box 生态支持，Clash / mihomo 无法解析 AnyReality。** 如果你的客户端是 Clash Verge / Stash 等 Clash 内核，必须改用 `--protocol vless-vision`。两种协议都无需域名和证书，服务器都会生成 Reality 私钥并用 SNI 做握手。
 
 ---
 
@@ -37,8 +46,9 @@
 | 变量 | 示例 | 说明 |
 |---|---|---|
 | `NODE_NAME` | `US-Resi-01` | 客户端显示名 |
+| `PROTOCOL` | `anytls-reality` | 协议：`anytls-reality`（默认，AnyReality）或 `vless-vision`（遗留） |
 | `SNI` | `addons.mozilla.org` | Reality 伪装握手站，需真实可访问的 HTTPS 站 |
-| `INBOUND_PORT` | `443` | VLESS 服务端口，强烈建议保持 443 |
+| `INBOUND_PORT` | `443` | sing-box 服务端口，强烈建议保持 443 |
 | `SSH_PORT` | `22` | SSH 端口；若你改过，传入新值让 UFW 放行 |
 | `INTERFACE` | `eth0` | 主网卡名，留空让脚本自动检测 |
 | `TIMEZONE` | `America/Los_Angeles` | 可选 |
@@ -57,20 +67,20 @@
 ## 3. 快速路径：一行安装
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
 ```
 
-脚本会自己 clone 仓库到 `/opt/reality-resi-stack/`，再 exec 完整安装器。所有阶段都在屏幕上有进度。
+脚本会自己 clone 仓库到 `/opt/anyreality-resi-stack/`，再 exec 完整安装器。所有阶段都在屏幕上有进度。默认协议是 AnyReality；如需遗留的 VLESS-Vision（例如客户端是 Clash），追加 `--protocol vless-vision`。
 真正改机器之前，安装器会先校验端口、流量数值、账期日、主机名、网卡名、布尔开关和用于渲染客户端配置的出口地址。
 如果公网 IP 自动探测失败，请在 `--config` 文件里设置 `SERVER_IP`；否则客户端配置会被渲染成不可用的空 server。
 
-默认拉取 `main`。如果你要固定某个分支或 tag，先到 [Releases](https://github.com/tytsxai/reality-resi-stack/releases) 选一个已发布 tag，再用：
+默认拉取 `main`。如果你要固定某个分支或 tag，先到 [Releases](https://github.com/tytsxai/anyreality-resi-stack/releases) 选一个已发布 tag，再用：
 
 ```bash
-REALITY_RESI_STACK_REF=<tag-or-branch> bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+ANYREALITY_RESI_STACK_REF=<tag-or-branch> bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --with-subscription
 ```
@@ -88,6 +98,7 @@ bash <(curl -fsSL .../install.sh) --node-name "US-Resi-01" --dry-run
 ```bash
 cat > /root/install.env <<'EOF'
 NODE_NAME=US-Resi-01
+PROTOCOL=anytls-reality
 SNI=addons.mozilla.org
 INBOUND_PORT=443
 INTERFACE=eth0
@@ -109,8 +120,8 @@ bash <(curl -fsSL .../install.sh) --config /root/install.env --non-interactive
 如果你想看每一步在做什么、或在自定义环境里只想跑某几个阶段，可以 clone 仓库后直接 source 库文件再调用对应 phase 函数：
 
 ```bash
-git clone --depth 1 https://github.com/tytsxai/reality-resi-stack.git /opt/reality-resi-stack
-cd /opt/reality-resi-stack
+git clone --depth 1 https://github.com/tytsxai/anyreality-resi-stack.git /opt/anyreality-resi-stack
+cd /opt/anyreality-resi-stack
 export REPO_ROOT="$PWD" COMMON_SH_LOADED=1
 . install/lib/common.sh
 . install/lib/system.sh
@@ -121,7 +132,8 @@ export NODE_NAME=US-Resi-01 SNI=addons.mozilla.org INBOUND_PORT=443 INTERFACE=et
 phase_preflight        # 系统检查
 phase_system_init      # apt 包 + BBR + swap + journald 限额
 phase_install_singbox  # 安装 sing-box（含 GPG 指纹校验）
-phase_generate_keys    # 生成 UUID + Reality 密钥对 + SUB_TOKEN
+phase_migrate_legacy_paths  # 升级 v1.x：把 reality-resi-stack 目录/单元迁移到 anyreality-resi-stack
+phase_generate_keys    # 生成认证凭据（AnyReality 生成 ANYTLS_PASSWORD；VLESS-Vision 生成 UUID）+ Reality 密钥对 + SUB_TOKEN
 phase_configure_singbox  # 渲染 /etc/sing-box/conf/*
 phase_singbox_service  # 写 systemd unit + enable --now
 phase_firewall         # UFW + fail2ban
@@ -130,11 +142,13 @@ phase_verify           # 端到端自检
 
 每个 phase 都是独立函数，幂等可重跑。源码在 `install/lib/`。
 
+**从 v1.x（reality-resi-stack）升级**：直接重跑安装器即可。`phase_migrate_legacy_paths` 会自动把旧的 `/etc`、`/var/lib`、`/usr/local/lib`、`/var/backups` 下 `reality-resi-stack` 目录迁移到 `anyreality-resi-stack` 前缀，并退役旧的 `reality-resi-stack-backup` 单元，因此**沿用原有 UUID / Reality 密钥 / 密码，已导入的客户端无需重配**。
+
 ---
 
 ## 5. 验证清单
 
-安装结束时脚本会打印一张"完成卡"，包含 vless:// 链接。手动复查：
+安装结束时脚本会打印一张"完成卡"。AnyReality 会给出手动导入所需的凭据（见下），遗留 VLESS-Vision 会给出 `vless://` 链接。手动复查：
 
 ```bash
 systemctl is-active sing-box                 # 应输出 active
@@ -150,7 +164,7 @@ journalctl -u sing-box -n 20 --no-pager       # 启动日志无错误
 
 ```bash
 curl -i http://127.0.0.1/healthz
-curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env | cut -d= -f2)
+curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env | cut -d= -f2)
 ```
 
 `curl -I` 应看到这几个响应头：
@@ -160,11 +174,24 @@ curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.
 - `Profile-Update-Interval`
 - `Subscription-Userinfo`
 
+订阅 URL 不变，仍是 `http://<server>/<TOKEN>/`。默认订阅文件随协议不同：AnyReality 输出 `profile.json`（一份完整的 sing-box 客户端配置：`mixed` 入站 `127.0.0.1:2080`、`anytls-reality` 出站、`route.final` 指向该节点），遗留 VLESS-Vision 输出 `profile.yaml`（Clash）。流量卡片 / `Subscription-Userinfo` 行为不变。
+
 客户端验证：
 
-- 用订阅 URL 导入到 v2rayN / Clash Verge / sing-box 移动端
+- 用订阅 URL 导入：AnyReality 用 sing-box 客户端（v2rayN、NekoBox、sing-box 移动端等）；遗留 VLESS-Vision 才能导入 Clash Verge。**Clash / mihomo 无法解析 AnyReality。**
 - 访问 `https://api.openai.com/v1/models`，未带 API key 时应返回 401，证明 OpenAI 链路可达
 - 用 `curl --proxy socks5h://127.0.0.1:7891 https://ipinfo.io` 确认出口 IP 是你的住宅 IP，不是别的
+
+**AnyReality 手动导入所需凭据**（从完成卡或 `/etc/anyreality-resi-stack/secrets.env` 读取）：
+
+- `type=anytls`
+- `server` = 服务器地址，`port` = `INBOUND_PORT`
+- `password` = `<ANYTLS_PASSWORD>`
+- `tls.server_name` = `<SNI>`
+- utls `fingerprint=chrome`
+- reality `public_key` = `<REALITY_PUBLIC_KEY>`、`short_id` = `<SHORT_ID>`
+
+注意 AnyReality **没有 `flow` 字段**。
 
 ---
 
@@ -182,7 +209,7 @@ sing-box check -C /etc/sing-box/conf
 如果新装时必须固定在某个已知 apt 包版本，可以传精确版本：
 
 ```bash
-bash /opt/reality-resi-stack/install/install.sh \
+bash /opt/anyreality-resi-stack/install/install.sh \
   --node-name "US-Resi-01" \
   --with-subscription \
   --singbox-version "<apt-package-version>"
@@ -195,16 +222,16 @@ bash /opt/reality-resi-stack/install/install.sh \
 ## 7. 卸载
 
 ```bash
-bash /opt/reality-resi-stack/install/uninstall.sh
+bash /opt/anyreality-resi-stack/install/uninstall.sh
 ```
 
-默认保留 `/etc/reality-resi-stack/`（含密钥，不能公开传播）和 `/var/backups/reality-resi-stack/`（备份归档）。要全部清除：
+默认保留 `/etc/anyreality-resi-stack/`（含密钥，不能公开传播）和 `/var/backups/anyreality-resi-stack/`（备份归档）。要全部清除：
 
 ```bash
-bash /opt/reality-resi-stack/install/uninstall.sh --purge-all
+bash /opt/anyreality-resi-stack/install/uninstall.sh --purge-all
 ```
 
-⚠️ `--purge-all` 会删除 UUID 和 Reality 密钥；删除后无法恢复，所有客户端订阅都将作废。
+⚠️ `--purge-all` 会删除认证凭据（AnyReality 的 `ANYTLS_PASSWORD` 或遗留 VLESS 的 UUID）和 Reality 密钥；删除后无法恢复，所有客户端订阅都将作废。
 
 ---
 

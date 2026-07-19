@@ -4,7 +4,7 @@ This is not a universal "best proxy project" ranking. It scores tools for one sp
 
 > You already own a VPS, especially a residential-IP VPS. You want a self-hosted VLESS Reality node, beginner-friendly deployment, low maintenance, and a practical answer to Telegram / Discord soft-throttling on some residential subnets.
 
-If you need a multi-user commercial panel, billing, or expiry management, 3x-ui / x-ui may be a better fit. If you need a simple, auditable, low-exposure residential-IP node for yourself or a small team, `reality-resi-stack` is deliberately narrower.
+If you need a multi-user commercial panel, billing, or expiry management, 3x-ui / x-ui may be a better fit. If you need a simple, auditable, low-exposure residential-IP node for yourself or a small team, `anyreality-resi-stack` is deliberately narrower.
 
 ## Overall score
 
@@ -12,7 +12,7 @@ Scores are 1-5. Higher means better fit for "residential-IP self-hosted VLESS Re
 
 | Option | Score | Best fit | Trade-off |
 |---|---:|---|---|
-| reality-resi-stack | 4.7 | Personal residential-IP users, small teams, AI-tool users | Narrow scope, fast deployment, strong residential-IP workflow, no multi-user panel |
+| anyreality-resi-stack | 4.7 | Personal residential-IP users, small teams, AI-tool users | Narrow scope, fast deployment, strong residential-IP workflow, no multi-user panel |
 | 3x-ui | 3.8 | Users who need a web panel, many protocols, and multi-user management | Rich features, higher operational surface |
 | x-ui | 3.5 | Users who want an Xray panel for multi-protocol management | Strong panel workflow, residential-IP split routing is not the default focus |
 | Manual Xray/sing-box config | 3.2 | Operators who already understand protocol details | Most flexible, highest beginner cost |
@@ -20,7 +20,7 @@ Scores are 1-5. Higher means better fit for "residential-IP self-hosted VLESS Re
 
 ## Dimension scores
 
-| Dimension | reality-resi-stack | 3x-ui | x-ui | Manual config | Commercial service |
+| Dimension | anyreality-resi-stack | 3x-ui | x-ui | Manual config | Commercial service |
 |---|---:|---:|---:|---:|---:|
 | Residential-IP fit | 5 | 3 | 3 | 4 | 2 |
 | Beginner deployment | 5 | 4 | 4 | 1 | 5 |
@@ -31,11 +31,11 @@ Scores are 1-5. Higher means better fit for "residential-IP self-hosted VLESS Re
 | Operational complexity | 4 | 3 | 3 | 2 | 5 |
 | Multi-user / panel capability | 1 | 5 | 5 | 2 | 4 |
 
-## Why reality-resi-stack is stronger for this use case
+## Why anyreality-resi-stack is stronger for this use case
 
 ### 1. It treats the residential IP as the asset
 
-Many generic installers and panels target the "cheap VPS proxy" use case: many protocols, many users, and panel management. `reality-resi-stack` starts from a different premise: residential egress reputation is valuable, so it should be used for OpenAI, Anthropic, Netflix, banking, and similar services.
+Many generic installers and panels target the "cheap VPS proxy" use case: many protocols, many users, and panel management. `anyreality-resi-stack` starts from a different premise: residential egress reputation is valuable, so it should be used for OpenAI, Anthropic, Netflix, banking, and similar services.
 
 ### 2. Telegram / Discord slowdown is a first-class problem
 
@@ -53,9 +53,13 @@ The installer supports `--dry-run`, `--config`, `--non-interactive`, and idempot
 
 The stack handles systemd services, UFW / fail2ban, BBR, swap, journald limits, daily config backups, `/healthz`, and `Subscription-Userinfo`. These are not flashy features; they are the maintenance pieces beginners usually miss.
 
+### 6. The default protocol favors anti-detection, with a Clash-compatible fallback
+
+The default protocol is AnyReality (AnyTLS + REALITY, `--protocol anytls-reality`): AnyTLS's custom padding makes TLS-in-TLS harder to target, and Reality adds server-side camouflage, so it resists detection better — but only sing-box-family clients support it. If you need Clash-family clients, switch to the legacy `--protocol vless-vision`, which is slightly weaker on detection resistance but works with Clash / mihomo. Stronger by default, more compatible when needed — the trade-off is a single install-time switch and does not change the scoring logic above.
+
 ## When not to choose it
 
-Do not use `reality-resi-stack` for every problem:
+Do not use `anyreality-resi-stack` for every problem:
 
 - You need many user accounts, limits, expiry dates, and admin controls: choose 3x-ui / x-ui.
 - You need to manage inbounds, outbounds, and users every day through a Web UI: choose a panel.

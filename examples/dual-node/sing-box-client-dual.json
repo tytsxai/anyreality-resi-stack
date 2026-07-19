@@ -1,0 +1,120 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "anytls",
+      "tag": "Example-Resi-01",
+      "server": "203.0.113.10",
+      "server_port": 443,
+      "password": "example-anytls-password-do-not-use",
+      "idle_session_check_interval": "30s",
+      "idle_session_timeout": "30s",
+      "min_idle_session": 5,
+      "tls": {
+        "enabled": true,
+        "server_name": "addons.mozilla.org",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "anytls",
+      "tag": "Example-DC-01",
+      "server": "198.51.100.20",
+      "server_port": 443,
+      "password": "example-anytls-password-do-not-use",
+      "idle_session_check_interval": "30s",
+      "idle_session_timeout": "30s",
+      "min_idle_session": 5,
+      "tls": {
+        "enabled": true,
+        "server_name": "addons.mozilla.org",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "domain_suffix": [
+          "openai.com",
+          "chatgpt.com",
+          "oaistatic.com",
+          "oaiusercontent.com",
+          "anthropic.com",
+          "claude.ai",
+          "googleapis.com",
+          "gemini.google.com",
+          "bard.google.com",
+          "netflix.com",
+          "nflxvideo.net"
+        ],
+        "outbound": "Example-Resi-01"
+      },
+      {
+        "domain_suffix": [
+          "telegram.org",
+          "t.me",
+          "telegram.me",
+          "tdesktop.com",
+          "telesco.pe",
+          "cdn-telegram.org",
+          "discord.com",
+          "discord.gg",
+          "discordapp.com",
+          "discordapp.net",
+          "discord.media"
+        ],
+        "outbound": "Example-DC-01"
+      },
+      {
+        "ip_cidr": [
+          "91.108.4.0/22",
+          "91.108.8.0/22",
+          "91.108.12.0/22",
+          "91.108.16.0/22",
+          "91.108.20.0/22",
+          "91.108.56.0/22",
+          "149.154.160.0/20"
+        ],
+        "outbound": "Example-DC-01"
+      }
+    ],
+    "final": "Example-Resi-01",
+    "auto_detect_interface": true
+  }
+}
