@@ -58,7 +58,7 @@ mdcheck:
 	fi; \
 	for f in $(MD_FILES); do \
 		attempt=1; \
-		until $$cmd -q "$$f"; do \
+		until $$cmd -q -c .markdown-link-check.json "$$f"; do \
 			if [[ $$attempt -ge 2 ]]; then exit 1; fi; \
 			echo "markdown-link-check failed for $$f; retrying once..."; \
 			attempt=$$((attempt + 1)); \
