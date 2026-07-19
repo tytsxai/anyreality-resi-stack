@@ -4,7 +4,7 @@
 
 > 已经有自己的 VPS，尤其是住宅 IP VPS；想部署自用 VLESS Reality；希望新手能照文档落地；后续维护成本低；最好能处理 Telegram / Discord 对住宅 IP 软降权的问题。
 
-如果你要做多用户商业面板、计费、到期管理，3x-ui / x-ui 这类项目会更合适。如果你只是要一个自用、可审计、低暴露面的住宅 IP 节点，`reality-resi-stack` 的取舍更直接。
+如果你要做多用户商业面板、计费、到期管理，3x-ui / x-ui 这类项目会更合适。如果你只是要一个自用、可审计、低暴露面的住宅 IP 节点，`anyreality-resi-stack` 的取舍更直接。
 
 ## 总分
 
@@ -12,7 +12,7 @@
 
 | 方案 | 总分 | 最适合的用户 | 核心取舍 |
 |---|---:|---|---|
-| reality-resi-stack | 4.7 | 自用住宅 IP / 小团队 / AI 工具用户 | 范围窄、部署快、住宅 IP 场景强，不做多用户面板 |
+| anyreality-resi-stack | 4.7 | 自用住宅 IP / 小团队 / AI 工具用户 | 范围窄、部署快、住宅 IP 场景强，不做多用户面板 |
 | 3x-ui | 3.8 | 需要 Web 面板、多协议、多用户管理的人 | 功能丰富，但面板和数据库带来更高运维面 |
 | x-ui | 3.5 | 想用 Xray 面板快速管理多协议的人 | 面板能力强，自用住宅 IP 分流不是默认重点 |
 | 手写 Xray/sing-box 配置 | 3.2 | 熟悉协议和配置的人 | 最灵活，但新手成本最高 |
@@ -20,7 +20,7 @@
 
 ## 维度评分
 
-| 维度 | reality-resi-stack | 3x-ui | x-ui | 手写配置 | 商业服务 |
+| 维度 | anyreality-resi-stack | 3x-ui | x-ui | 手写配置 | 商业服务 |
 |---|---:|---:|---:|---:|---:|
 | 住宅 IP 场景适配 | 5 | 3 | 3 | 4 | 2 |
 | 新手部署简单度 | 5 | 4 | 4 | 1 | 5 |
@@ -31,11 +31,11 @@
 | 运维复杂度 | 4 | 3 | 3 | 2 | 5 |
 | 多用户 / 面板能力 | 1 | 5 | 5 | 2 | 4 |
 
-## 为什么 reality-resi-stack 在这个场景更强
+## 为什么 anyreality-resi-stack 在这个场景更强
 
 ### 1. 它默认承认“住宅 IP 是资产”
 
-很多通用安装器和面板默认服务的是“便宜 VPS 翻墙”场景，重点是多协议、多用户、面板管理。`reality-resi-stack` 的默认前提不同：住宅 IP 的价值在于出口信誉，所以应该优先给 OpenAI、Anthropic、Netflix、银行等服务使用。
+很多通用安装器和面板默认服务的是“便宜 VPS 翻墙”场景，重点是多协议、多用户、面板管理。`anyreality-resi-stack` 的默认前提不同：住宅 IP 的价值在于出口信誉，所以应该优先给 OpenAI、Anthropic、Netflix、银行等服务使用。
 
 ### 2. 它把 Telegram / Discord 慢当成一等问题
 
@@ -53,9 +53,13 @@
 
 默认处理 systemd 服务、UFW / fail2ban、BBR、swap、journald 限额、每日配置备份、`/healthz` 和 `Subscription-Userinfo`。这不是“更高级”，而是新手最容易漏掉的维护面。
 
+### 6. 默认协议偏向抗检测，同时保留 Clash 兼容退路
+
+默认协议是 AnyReality（AnyTLS + REALITY，`--protocol anytls-reality`）：AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对，Reality 补齐服务端伪装，整体抗检测更强，但只被 sing-box 系客户端支持。如果需要 Clash 系客户端，改用遗留 `--protocol vless-vision` 即可，抗检测稍弱但兼容 Clash / mihomo。默认更安全、可选更兼容，这个取舍由部署时一个开关决定，不影响上面的评分逻辑。
+
 ## 什么时候不该选它
 
-不要为了所有场景都选 `reality-resi-stack`：
+不要为了所有场景都选 `anyreality-resi-stack`：
 
 - 你要给很多用户开账号、限速、设置到期时间：选 3x-ui / x-ui。
 - 你需要 Web UI 每天管理入站、出站和用户：选面板。

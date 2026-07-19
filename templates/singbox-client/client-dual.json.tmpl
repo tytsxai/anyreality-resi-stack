@@ -1,0 +1,120 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "anytls",
+      "tag": "@@RESI_NODE_NAME@@",
+      "server": "@@RESI_SERVER_IP@@",
+      "server_port": @@RESI_INBOUND_PORT@@,
+      "password": "@@RESI_ANYTLS_PASSWORD@@",
+      "idle_session_check_interval": "30s",
+      "idle_session_timeout": "30s",
+      "min_idle_session": 5,
+      "tls": {
+        "enabled": true,
+        "server_name": "@@RESI_SNI@@",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "@@RESI_REALITY_PUBLIC_KEY@@",
+          "short_id": "@@RESI_SHORT_ID@@"
+        }
+      }
+    },
+    {
+      "type": "anytls",
+      "tag": "@@DC_NODE_NAME@@",
+      "server": "@@DC_SERVER_IP@@",
+      "server_port": @@DC_INBOUND_PORT@@,
+      "password": "@@DC_ANYTLS_PASSWORD@@",
+      "idle_session_check_interval": "30s",
+      "idle_session_timeout": "30s",
+      "min_idle_session": 5,
+      "tls": {
+        "enabled": true,
+        "server_name": "@@DC_SNI@@",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "@@DC_REALITY_PUBLIC_KEY@@",
+          "short_id": "@@DC_SHORT_ID@@"
+        }
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "domain_suffix": [
+          "openai.com",
+          "chatgpt.com",
+          "oaistatic.com",
+          "oaiusercontent.com",
+          "anthropic.com",
+          "claude.ai",
+          "googleapis.com",
+          "gemini.google.com",
+          "bard.google.com",
+          "netflix.com",
+          "nflxvideo.net"
+        ],
+        "outbound": "@@RESI_NODE_NAME@@"
+      },
+      {
+        "domain_suffix": [
+          "telegram.org",
+          "t.me",
+          "telegram.me",
+          "tdesktop.com",
+          "telesco.pe",
+          "cdn-telegram.org",
+          "discord.com",
+          "discord.gg",
+          "discordapp.com",
+          "discordapp.net",
+          "discord.media"
+        ],
+        "outbound": "@@DC_NODE_NAME@@"
+      },
+      {
+        "ip_cidr": [
+          "91.108.4.0/22",
+          "91.108.8.0/22",
+          "91.108.12.0/22",
+          "91.108.16.0/22",
+          "91.108.20.0/22",
+          "91.108.56.0/22",
+          "149.154.160.0/20"
+        ],
+        "outbound": "@@DC_NODE_NAME@@"
+      }
+    ],
+    "final": "@@RESI_NODE_NAME@@",
+    "auto_detect_interface": true
+  }
+}

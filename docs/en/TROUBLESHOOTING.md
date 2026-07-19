@@ -16,16 +16,23 @@ Issue templates will ask for the output of these first.
 
 ## Client cannot connect
 
+**Check protocol match first.** The default protocol is AnyReality (AnyTLS + Reality), which requires a **sing-box-family client** (sing-box, SFA/SFI/SFT, any fork that supports anytls). **Importing an AnyReality subscription into Clash/mihomo fails** — Clash does not understand `anytls+reality`. Users who need Clash should reinstall as legacy VLESS+Reality with `--protocol vless-vision`.
+
 | Likely cause | How to check |
 |---|---|
+| AnyReality subscription imported into Clash | Switch to a sing-box-family client, or reinstall with `--protocol vless-vision` |
 | Cloud provider security group not allowing `443/tcp` | Check the provider console |
 | UFW not allowing `443/tcp` | `ufw status` |
-| Client UUID mismatch | Compare client `vless://` UUID vs server `secrets.env` |
-| Client `public-key` wrong | Compare client `pbk=` vs server `REALITY_PUBLIC_KEY` |
-| Client `servername` ≠ server `server_name` | Both must be the same SNI (e.g. `addons.mozilla.org`) |
-| Client lacks Reality / `xtls-rprx-vision` support | Update to latest v2rayN / Clash Verge / sing-box |
+| AnyReality: client `password` ≠ server `ANYTLS_PASSWORD` | Compare client password vs `ANYTLS_PASSWORD` in `/etc/anyreality-resi-stack/secrets.env` (AnyReality has no UUID / flow) |
+| Legacy vless-vision: client UUID mismatch | Compare client `vless://` UUID vs server `secrets.env` |
+| Client Reality `public-key` wrong | Compare client `pbk=` / `public_key` vs server `REALITY_PUBLIC_KEY` |
+| Client Reality `short_id` mismatch | Compare client `short_id` vs server config |
+| Client `servername` / SNI ≠ server `server_name` | Both must be the same SNI (e.g. `addons.mozilla.org`) |
+| Client lacks Reality support (legacy also needs `xtls-rprx-vision`) | Update to latest sing-box / v2rayN / Clash Verge |
 | nginx/caddy/apache already holds 443 | `ss -tlnp \| grep 443` to see |
 | sing-box config has an error | `sing-box check -C /etc/sing-box/conf` |
+
+> Only one inbound file should exist at a time: AnyReality is `/etc/sing-box/conf/11_anytls-reality_inbounds.json`, legacy is `11_xtls-reality_inbounds.json`. Keeping both makes them fight over port `443` and `sing-box check` will fail.
 
 ---
 
@@ -96,18 +103,18 @@ journalctl -u subscription-leaf -n 50 --no-pager
 
 ```bash
 CURRENT_TOTAL=$(( $(cat /sys/class/net/eth0/statistics/rx_bytes) + $(cat /sys/class/net/eth0/statistics/tx_bytes) ))
-STATE_USED=$(python3 -c "import json; print(int(json.load(open('/var/lib/reality-resi-stack/usage-state.json'))['used_bytes']))")
+STATE_USED=$(python3 -c "import json; print(int(json.load(open('/var/lib/anyreality-resi-stack/usage-state.json'))['used_bytes']))")
 BACKEND_USED=900000000000   # bytes used per your provider's dashboard
 
 OFFSET=$((BACKEND_USED - STATE_USED))
-sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/reality-resi-stack/subscription-leaf.env
+sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/anyreality-resi-stack/subscription-leaf.env
 sudo systemctl restart subscription-leaf
 ```
 
 If your provider resets traffic on a non-first day of the month, also set `BILLING_CYCLE_DAY` before calibrating:
 
 ```bash
-sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/reality-resi-stack/subscription-leaf.env
+sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/anyreality-resi-stack/subscription-leaf.env
 ```
 
 If `usage-state.json` does not exist yet or was cleared during restore, the leaf now creates state on the next background poll or status request. `USAGE_OFFSET_BYTES` may be negative; the server clamps the final reported value to zero or above.
@@ -123,7 +130,7 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername addons.mozilla.org 2>
 Should return the certificate subject of `addons.mozilla.org`. If it returns something else (sing-box self-signed, `cannot connect`):
 
 - **sing-box not installed / not running**: `systemctl status sing-box`
-- **SNI misconfigured**: `/etc/sing-box/conf/11_xtls-reality_inbounds.json` must have identical `tls.server_name` and `reality.handshake.server`
+- **SNI misconfigured**: the inbound file (AnyReality: `11_anytls-reality_inbounds.json`; legacy: `11_xtls-reality_inbounds.json`) must have identical `tls.server_name` and `tls.reality.handshake.server`
 - **Server can't reach the SNI host**: try `curl -v https://addons.mozilla.org/` directly from the VPS
 - **Reality private/public keys mismatched**: regenerate with `sing-box generate reality-keypair`, update both server and client
 
@@ -177,21 +184,21 @@ sudo systemctl restart chrony
 ## Broken config / want to roll back
 
 ```bash
-ls /var/backups/reality-resi-stack/
-tar -tzf /var/backups/reality-resi-stack/reality-resi-stack-2026-05-17-120000.tar.gz | head
+ls /var/backups/anyreality-resi-stack/
+tar -tzf /var/backups/anyreality-resi-stack/anyreality-resi-stack-2026-05-17-120000.tar.gz | head
 ```
 
 Restore (stop services first):
 
 ```bash
 systemctl stop sing-box
-tar -xzf /var/backups/reality-resi-stack/reality-resi-stack-XXXX.tar.gz -C /
+tar -xzf /var/backups/anyreality-resi-stack/anyreality-resi-stack-XXXX.tar.gz -C /
 systemctl daemon-reload
 systemctl start sing-box
 sing-box check -C /etc/sing-box/conf
 ```
 
-⚠️ Backups **do not** include `/var/lib/reality-resi-stack/usage-state.json` or `usage-cache.json` (runtime state), so after a restore the counter restarts. Archives include `/etc/reality-resi-stack/`, which contains secrets and tokens; do not share them publicly. Apply a `USAGE_OFFSET_BYTES` after restore (see "Counter doesn't match provider dashboard" above).
+⚠️ Backups **do not** include `/var/lib/anyreality-resi-stack/usage-state.json` or `usage-cache.json` (runtime state), so after a restore the counter restarts. Archives include `/etc/anyreality-resi-stack/`, which contains secrets and tokens; do not share them publicly. Apply a `USAGE_OFFSET_BYTES` after restore (see "Counter doesn't match provider dashboard" above).
 
 ---
 

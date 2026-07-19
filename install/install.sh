@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# reality-resi-stack installer.
+# anyreality-resi-stack installer.
 #
 # Quick install:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+#   bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
 #     --node-name "US-Resi-01" --sni addons.mozilla.org
 #
 # Flags:
 #   --node-name NAME            Display name shown in clients (required)
+#   --protocol NAME             anytls-reality (default) | vless-vision (legacy)
 #   --sni HOST                  Reality SNI (default: addons.mozilla.org)
 #   --inbound-port N            Listen port (default: 443)
 #   --ssh-port N                SSH port if you want UFW to keep it open (default: 22)
@@ -26,29 +27,32 @@
 #   --help                      This message
 #
 # Environment:
-#   REALITY_RESI_STACK_REF      Branch/tag for remote-piped installs (default: main)
+#   ANYREALITY_RESI_STACK_REF   Branch/tag for remote-piped installs (default: main;
+#                               legacy REALITY_RESI_STACK_REF is still honored)
 
 set -Eeuo pipefail
 
 # ── Self-locate the repo (handles both clone-and-run and curl-piped use) ─
-REPO_DIR=/opt/reality-resi-stack
-REALITY_RESI_STACK_REF="${REALITY_RESI_STACK_REF:-main}"
+REPO_DIR=/opt/anyreality-resi-stack
+# Primary env var is ANYREALITY_RESI_STACK_REF; the legacy REALITY_RESI_STACK_REF
+# is still accepted as a fallback so old curl-piped commands keep working.
+ANYREALITY_RESI_STACK_REF="${ANYREALITY_RESI_STACK_REF:-${REALITY_RESI_STACK_REF:-main}}"
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 
 # When invoked via `bash <(curl ...)`, BASH_SOURCE is /dev/fd/<n> — we need
 # to fetch the full repo before we can source lib/*.sh and read templates/.
 if [[ -z "$SCRIPT_PATH" || "$SCRIPT_PATH" == /dev/fd/* || "$SCRIPT_PATH" == /proc/* ]]; then
-  echo ">> Detected remote-piped run — fetching ref ${REALITY_RESI_STACK_REF} to $REPO_DIR…"
+  echo ">> Detected remote-piped run — fetching ref ${ANYREALITY_RESI_STACK_REF} to $REPO_DIR…"
   if ! command -v git >/dev/null 2>&1; then
     apt-get update -qq && apt-get install -y -qq git
   fi
   if [[ -d "$REPO_DIR/.git" ]]; then
-    git -C "$REPO_DIR" fetch --depth 1 origin "$REALITY_RESI_STACK_REF"
+    git -C "$REPO_DIR" fetch --depth 1 origin "$ANYREALITY_RESI_STACK_REF"
     git -C "$REPO_DIR" reset --hard FETCH_HEAD
   else
     rm -rf "$REPO_DIR"
-    git clone --depth 1 --branch "$REALITY_RESI_STACK_REF" \
-      https://github.com/tytsxai/reality-resi-stack.git "$REPO_DIR"
+    git clone --depth 1 --branch "$ANYREALITY_RESI_STACK_REF" \
+      https://github.com/tytsxai/anyreality-resi-stack.git "$REPO_DIR"
   fi
   exec bash "$REPO_DIR/install/install.sh" "$@"
 fi
@@ -71,6 +75,7 @@ export COMMON_SH_LOADED
 
 # ── Defaults ─────────────────────────────────────────────────────────────
 NODE_NAME=""
+PROTOCOL="anytls-reality"
 SNI="addons.mozilla.org"
 INBOUND_PORT=443
 SSH_PORT=22
@@ -98,13 +103,17 @@ NON_INTERACTIVE=0
 DO_UNINSTALL=0
 CONFIG_FILE=""
 
-print_help() { sed -n '/^# reality-resi-stack installer\./,/^set -Eeuo/{ /^set -Eeuo/d; s/^# \{0,1\}//; p; }' "$0"; }
+print_help() { sed -n '/^# anyreality-resi-stack installer\./,/^set -Eeuo/{ /^set -Eeuo/d; s/^# \{0,1\}//; p; }' "$0"; }
 
 # ── Argument parsing ─────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --node-name)
       NODE_NAME="$2"
+      shift 2
+      ;;
+    --protocol)
+      PROTOCOL="$2"
       shift 2
       ;;
     --sni)
@@ -271,6 +280,10 @@ validate_config() {
   require_min_uint REQUEST_TIMEOUT_SECONDS "$REQUEST_TIMEOUT_SECONDS" 1
   require_bool_word COUNT_CURRENT_BOOT_ON_INIT "$COUNT_CURRENT_BOOT_ON_INIT"
   require_safe_label NODE_NAME "$NODE_NAME"
+  case "$PROTOCOL" in
+    anytls-reality | vless-vision) ;;
+    *) die "PROTOCOL must be anytls-reality or vless-vision, got: $PROTOCOL" ;;
+  esac
   require_safe_host SNI "$SNI"
   require_safe_interface INTERFACE "$INTERFACE"
   [[ "$DRY_RUN" == "1" || -n "$SERVER_IP" ]] ||
@@ -307,7 +320,7 @@ fi
 
 validate_config
 
-export SERVER_IP NODE_NAME SNI INBOUND_PORT SSH_PORT TIMEZONE INTERFACE \
+export SERVER_IP NODE_NAME PROTOCOL SNI INBOUND_PORT SSH_PORT TIMEZONE INTERFACE \
   TOTAL_BYTES EXPIRE_TS USAGE_OFFSET_BYTES WITH_SUBSCRIPTION WITH_AGGREGATOR \
   BILLING_CYCLE_DAY USAGE_POLL_INTERVAL_SECONDS COUNT_CURRENT_BOOT_ON_INIT \
   UPDATE_INTERVAL_HOURS CACHE_TTL_SECONDS REMOTE_POLL_INTERVAL_SECONDS \
@@ -318,6 +331,7 @@ export SERVER_IP NODE_NAME SNI INBOUND_PORT SSH_PORT TIMEZONE INTERFACE \
 phase_preflight
 phase_system_init
 phase_install_singbox
+phase_migrate_legacy_paths
 phase_generate_keys
 phase_configure_singbox
 phase_singbox_service
@@ -342,17 +356,26 @@ printf "%s╚══════════════════════�
 
 if [[ "$DRY_RUN" != "1" ]]; then
   printf "\n%sNode :%s %s\n" "$C_CYAN" "$C_RESET" "$NODE_NAME"
+  printf "%sProto:%s %s\n" "$C_CYAN" "$C_RESET" "$PROTOCOL"
   printf "%sIP   :%s %s\n" "$C_CYAN" "$C_RESET" "${SERVER_IP:-<unknown>}"
   printf "%sPort :%s %s\n" "$C_CYAN" "$C_RESET" "$INBOUND_PORT"
   printf "%sSNI  :%s %s\n" "$C_CYAN" "$C_RESET" "$SNI"
 
-  printf "\n%sClient vless:// link (save this — it will not be shown again):%s\n" "$C_YELLOW" "$C_RESET"
-  printf "  vless://%s@%s:%s?encryption=none&flow=xtls-rprx-vision&security=reality&sni=%s&fp=chrome&pbk=%s&sid=%s&type=tcp#%s\n" \
-    "$UUID" "$SERVER_IP" "$INBOUND_PORT" "$SNI" "$REALITY_PUBLIC_KEY" "$SHORT_ID" "$NODE_NAME"
+  if [[ "$PROTOCOL" == "vless-vision" ]]; then
+    printf "\n%sClient vless:// link (save this — it will not be shown again):%s\n" "$C_YELLOW" "$C_RESET"
+    printf "  vless://%s@%s:%s?encryption=none&flow=xtls-rprx-vision&security=reality&sni=%s&fp=chrome&pbk=%s&sid=%s&type=tcp#%s\n" \
+      "$UUID" "$SERVER_IP" "$INBOUND_PORT" "$SNI" "$REALITY_PUBLIC_KEY" "$SHORT_ID" "$NODE_NAME"
+  else
+    printf "\n%sAnyReality (AnyTLS + Reality) client credentials — import via a sing-box client:%s\n" "$C_YELLOW" "$C_RESET"
+    printf "  type=anytls  server=%s  port=%s\n" "${SERVER_IP:-<host>}" "$INBOUND_PORT"
+    printf "  password=%s\n" "$ANYTLS_PASSWORD"
+    printf "  sni=%s  public-key=%s  short-id=%s  fingerprint=chrome\n" "$SNI" "$REALITY_PUBLIC_KEY" "$SHORT_ID"
+    printf "%s  Clash/mihomo does not support AnyReality; reinstall with --protocol vless-vision if you need Clash.%s\n" "$C_GRAY" "$C_RESET"
+  fi
 
   if [[ "$WITH_SUBSCRIPTION" == "1" || "$WITH_AGGREGATOR" == "1" ]]; then
     printf "\n%sSubscription URL:%s http://%s/%s\n" "$C_CYAN" "$C_RESET" "${SERVER_IP:-<host>}" "$SUB_TOKEN"
   fi
 
-  printf "\n%sSecrets stored at /etc/reality-resi-stack/secrets.env (mode 600).%s\n" "$C_GRAY" "$C_RESET"
+  printf "\n%sSecrets stored at /etc/anyreality-resi-stack/secrets.env (mode 600).%s\n" "$C_GRAY" "$C_RESET"
 fi

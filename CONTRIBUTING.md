@@ -13,8 +13,8 @@ Thanks for considering a contribution. The hard rules first.
 ## Workflow
 
 ```bash
-git clone https://github.com/tytsxai/reality-resi-stack.git
-cd reality-resi-stack
+git clone https://github.com/tytsxai/anyreality-resi-stack.git
+cd anyreality-resi-stack
 
 # Install tooling once
 brew install shellcheck shfmt

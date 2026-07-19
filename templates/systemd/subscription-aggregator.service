@@ -5,16 +5,16 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/reality-resi-stack/subscription-aggregator.env
-ExecStart=/usr/bin/python3 /usr/local/lib/reality-resi-stack/aggregator_server.py
+EnvironmentFile=/etc/anyreality-resi-stack/subscription-aggregator.env
+ExecStart=/usr/bin/python3 /usr/local/lib/anyreality-resi-stack/aggregator_server.py
 Restart=always
 RestartSec=3
-WorkingDirectory=/usr/local/lib/reality-resi-stack
+WorkingDirectory=/usr/local/lib/anyreality-resi-stack
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectHome=yes
 ProtectSystem=strict
-ReadWritePaths=/var/lib/reality-resi-stack
+ReadWritePaths=/var/lib/anyreality-resi-stack
 
 [Install]
 WantedBy=multi-user.target

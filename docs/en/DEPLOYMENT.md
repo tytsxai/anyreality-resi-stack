@@ -1,11 +1,20 @@
 # Deployment
 
-This document walks you from a blank Ubuntu/Debian VPS to a running VLESS+Reality node. Two paths:
+This document walks you from a blank Ubuntu/Debian VPS to a running node. Two paths:
 
 - **Fast path**: a single `bash <(curl ...)` line that runs `install/install.sh`. This is the right answer 99% of the time.
 - **Manual path**: source the `install/lib/*.sh` modules and call phase functions yourself, one at a time. Useful if you want to understand each step or if you're working inside a restricted network where you need to interleave operations.
 
 Both paths produce identical end states.
+
+### Protocol choice: AnyReality (default) vs VLESS-Vision (legacy)
+
+The installer switches protocols with the `--protocol` flag (config variable `PROTOCOL`):
+
+- **`--protocol anytls-reality` (default)**: AnyTLS + REALITY, or **AnyReality** for short. Under the hood it is sing-box's `anytls` inbound layered over `tls.reality`. AnyTLS's custom padding makes TLS-in-TLS harder to fingerprint, and Reality provides server-side camouflage (no certificate needed), so it is stronger on anti-detection than plain VLESS+Reality. Authentication uses a per-server random **password** (`ANYTLS_PASSWORD`) — there is no UUID/flow.
+- **`--protocol vless-vision` (legacy)**: VLESS + Reality + xtls-rprx-vision, authenticated with a UUID + `flow`. Still fully supported, kept mainly for users who need Clash/mihomo.
+
+⚠️ **AnyReality is only supported by the sing-box ecosystem; Clash / mihomo cannot parse AnyReality.** If your client uses the Clash core (Clash Verge, Stash, etc.), you must use `--protocol vless-vision`. Both protocols need no domain and no certificate; both generate a Reality private key and use the SNI for the handshake.
 
 ---
 
@@ -37,6 +46,7 @@ Decide these before running. The installer prompts for missing values, but bundl
 | Variable | Example | Purpose |
 |---|---|---|
 | `NODE_NAME` | `US-Resi-01` | Display name shown in clients |
+| `PROTOCOL` | `anytls-reality` | Protocol: `anytls-reality` (default, AnyReality) or `vless-vision` (legacy) |
 | `SNI` | `addons.mozilla.org` | Reality handshake server — must be a real, reachable HTTPS site |
 | `INBOUND_PORT` | `443` | sing-box listen port; keep `443` unless you have a reason |
 | `SSH_PORT` | `22` | SSH port (so UFW keeps it open if you've changed it) |
@@ -55,22 +65,22 @@ Decide these before running. The installer prompts for missing values, but bundl
 ## 3. Fast path: one-line install
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
 ```
 
-The script clones the repo to `/opt/reality-resi-stack/` and execs the full installer. Every phase prints progress.
+The script clones the repo to `/opt/anyreality-resi-stack/` and execs the full installer. Every phase prints progress. The default protocol is AnyReality; append `--protocol vless-vision` for the legacy VLESS-Vision protocol (for example when the client is Clash).
 Before touching the machine, the installer validates ports, counters, billing
 cycle day, hostnames, interface names, booleans, and the rendered profile host.
 If public IP auto-detection fails, set `SERVER_IP` in `--config`; otherwise the
 client profile would be rendered with an unusable empty server.
 
-Remote-piped installs default to `main`. To pin a branch or tag, choose a published tag from [Releases](https://github.com/tytsxai/reality-resi-stack/releases), then run:
+Remote-piped installs default to `main`. To pin a branch or tag, choose a published tag from [Releases](https://github.com/tytsxai/anyreality-resi-stack/releases), then run:
 
 ```bash
-REALITY_RESI_STACK_REF=<tag-or-branch> bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+ANYREALITY_RESI_STACK_REF=<tag-or-branch> bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --with-subscription
 ```
@@ -88,6 +98,7 @@ In `--dry-run` mode the installer **prints** every command it would run but chan
 ```bash
 cat > /root/install.env <<'EOF'
 NODE_NAME=US-Resi-01
+PROTOCOL=anytls-reality
 SNI=addons.mozilla.org
 INBOUND_PORT=443
 INTERFACE=eth0
@@ -109,8 +120,8 @@ bash <(curl -fsSL .../install.sh) --config /root/install.env --non-interactive
 If you want to see each step or run only a subset in a customized environment:
 
 ```bash
-git clone --depth 1 https://github.com/tytsxai/reality-resi-stack.git /opt/reality-resi-stack
-cd /opt/reality-resi-stack
+git clone --depth 1 https://github.com/tytsxai/anyreality-resi-stack.git /opt/anyreality-resi-stack
+cd /opt/anyreality-resi-stack
 export REPO_ROOT="$PWD" COMMON_SH_LOADED=1
 . install/lib/common.sh
 . install/lib/system.sh
@@ -121,7 +132,8 @@ export NODE_NAME=US-Resi-01 SNI=addons.mozilla.org INBOUND_PORT=443 INTERFACE=et
 phase_preflight        # OS / port / IPv4 / disk / RAM checks
 phase_system_init      # apt deps + BBR + swap + journald limits
 phase_install_singbox  # sing-box install with verified GPG fingerprint
-phase_generate_keys    # UUID + Reality keypair + SUB_TOKEN
+phase_migrate_legacy_paths  # v1.x upgrade: move reality-resi-stack dirs/units to anyreality-resi-stack
+phase_generate_keys    # Auth credential (AnyReality: ANYTLS_PASSWORD; VLESS-Vision: UUID) + Reality keypair + SUB_TOKEN
 phase_configure_singbox  # Render /etc/sing-box/conf/*
 phase_singbox_service  # systemd unit + enable --now
 phase_firewall         # UFW + fail2ban
@@ -130,11 +142,13 @@ phase_verify           # End-to-end checks
 
 Each phase is an independent function and is idempotent. Source is `install/lib/`.
 
+**Upgrading from v1.x (reality-resi-stack)**: just re-run the installer. `phase_migrate_legacy_paths` moves the old `reality-resi-stack` directories under `/etc`, `/var/lib`, `/usr/local/lib`, and `/var/backups` to the `anyreality-resi-stack` prefix and retires the old `reality-resi-stack-backup` unit, so your existing UUID / Reality keys / password are reused and **already-imported clients keep working**.
+
 ---
 
 ## 5. Verification checklist
 
-When the installer finishes it prints a "completion card" containing your `vless://` link. Verify by hand:
+When the installer finishes it prints a "completion card". For AnyReality it lists the credentials you need for manual import (see below); for legacy VLESS-Vision it prints a `vless://` link. Verify by hand:
 
 ```bash
 systemctl is-active sing-box                 # active
@@ -150,7 +164,7 @@ Subscription server (if enabled):
 
 ```bash
 curl -i http://127.0.0.1/healthz
-curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env | cut -d= -f2)
+curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env | cut -d= -f2)
 ```
 
 `curl -I` should show these response headers:
@@ -160,11 +174,24 @@ curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.
 - `Profile-Update-Interval`
 - `Subscription-Userinfo`
 
+The subscription URL is unchanged: `http://<server>/<TOKEN>/`. The default profile file depends on the protocol: AnyReality serves `profile.json` (a complete sing-box client config — a `mixed` inbound on `127.0.0.1:2080`, an `anytls-reality` outbound, and `route.final` pointing at the node), while legacy VLESS-Vision serves `profile.yaml` (Clash). The usage card / `Subscription-Userinfo` behavior is unchanged.
+
 Client-side:
 
-- Import the subscription URL into v2rayN / Clash Verge / sing-box mobile
+- Import the subscription URL. AnyReality needs a sing-box client (v2rayN, NekoBox, sing-box mobile, etc.); only legacy VLESS-Vision can be imported into Clash Verge. **Clash / mihomo cannot parse AnyReality.**
 - Hit `https://api.openai.com/v1/models` — without an API key, expect a 401, which means the OpenAI path is up
 - `curl --proxy socks5h://127.0.0.1:7891 https://ipinfo.io` should report your residential IP
+
+**Credentials for manual AnyReality import** (read from the completion card or `/etc/anyreality-resi-stack/secrets.env`):
+
+- `type=anytls`
+- `server` = your server address, `port` = `INBOUND_PORT`
+- `password` = `<ANYTLS_PASSWORD>`
+- `tls.server_name` = `<SNI>`
+- utls `fingerprint=chrome`
+- reality `public_key` = `<REALITY_PUBLIC_KEY>`, `short_id` = `<SHORT_ID>`
+
+Note that AnyReality has **no `flow` field**.
 
 ---
 
@@ -183,7 +210,7 @@ For new installs that must stay on a known package build, pass the exact apt
 package version:
 
 ```bash
-bash /opt/reality-resi-stack/install/install.sh \
+bash /opt/anyreality-resi-stack/install/install.sh \
   --node-name "US-Resi-01" \
   --with-subscription \
   --singbox-version "<apt-package-version>"
@@ -197,16 +224,16 @@ fails before any sing-box service is started.
 ## 7. Uninstall
 
 ```bash
-bash /opt/reality-resi-stack/install/uninstall.sh
+bash /opt/anyreality-resi-stack/install/uninstall.sh
 ```
 
-By default this preserves `/etc/reality-resi-stack/` (including secrets; do not share it publicly) and `/var/backups/reality-resi-stack/`. To wipe everything:
+By default this preserves `/etc/anyreality-resi-stack/` (including secrets; do not share it publicly) and `/var/backups/anyreality-resi-stack/`. To wipe everything:
 
 ```bash
-bash /opt/reality-resi-stack/install/uninstall.sh --purge-all
+bash /opt/anyreality-resi-stack/install/uninstall.sh --purge-all
 ```
 
-⚠️ `--purge-all` deletes the UUID and Reality keys; they cannot be recovered, and every client subscription becomes invalid.
+⚠️ `--purge-all` deletes the auth credential (AnyReality's `ANYTLS_PASSWORD` or the legacy VLESS UUID) and the Reality keys; they cannot be recovered, and every client subscription becomes invalid.
 
 ---
 

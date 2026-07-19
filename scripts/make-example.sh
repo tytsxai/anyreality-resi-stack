@@ -20,6 +20,7 @@ declare_fakes_single() {
   REALITY_PUBLIC_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
   SHORT_ID=""
   SUB_TOKEN="example-token-do-not-use"
+  ANYTLS_PASSWORD="example-anytls-password-do-not-use"
   SERVER_IP="203.0.113.10"
   SNI="addons.mozilla.org"
   INBOUND_PORT="443"
@@ -32,6 +33,7 @@ declare_fakes_dual() {
   RESI_REALITY_PRIVATE_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
   RESI_REALITY_PUBLIC_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
   RESI_SHORT_ID=""
+  RESI_ANYTLS_PASSWORD="example-anytls-password-do-not-use"
   RESI_SERVER_IP="203.0.113.10"
   RESI_SNI="addons.mozilla.org"
   RESI_INBOUND_PORT="443"
@@ -41,6 +43,7 @@ declare_fakes_dual() {
   DC_REALITY_PRIVATE_KEY="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
   DC_REALITY_PUBLIC_KEY="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
   DC_SHORT_ID=""
+  DC_ANYTLS_PASSWORD="example-anytls-password-do-not-use"
   DC_SERVER_IP="198.51.100.20"
   DC_SNI="addons.mozilla.org"
   DC_INBOUND_PORT="443"
@@ -90,6 +93,15 @@ main() {
   # ── Single-node example ────────────────────────────────────────────
   declare_fakes_single
 
+  # AnyReality (default) — server inbound + full sing-box client config.
+  render "$TEMPLATES/singbox/11_anytls-reality_inbounds.json.tmpl" \
+    "$EXAMPLES/single-node/11_anytls-reality_inbounds.json"
+  render "$TEMPLATES/singbox-client/client-single.json.tmpl" \
+    "$EXAMPLES/single-node/sing-box-client-config.json"
+  render "$TEMPLATES/singbox-client/anytls-outbound.json.tmpl" \
+    "$EXAMPLES/single-node/sing-box-client-anytls-outbound.json"
+
+  # VLESS + Vision (legacy) — server inbound + Clash / sing-box / share link.
   render "$TEMPLATES/singbox/11_xtls-reality_inbounds.json.tmpl" \
     "$EXAMPLES/single-node/11_xtls-reality_inbounds.json"
   cp "$TEMPLATES/singbox/00_log.json" "$EXAMPLES/single-node/00_log.json"
@@ -104,7 +116,7 @@ main() {
   render "$TEMPLATES/singbox-client/outbound.json.tmpl" \
     "$EXAMPLES/single-node/sing-box-client-outbound.json"
 
-  # vless:// link
+  # vless:// link (legacy protocol only)
   cat >"$EXAMPLES/single-node/vless-link.txt" <<EOF
 vless://${UUID}@${SERVER_IP}:${INBOUND_PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${SNI}&fp=chrome&pbk=${REALITY_PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp#${NODE_NAME}
 EOF
@@ -112,6 +124,11 @@ EOF
   # ── Dual-node example ──────────────────────────────────────────────
   declare_fakes_dual
 
+  # AnyReality (default) — full sing-box client config with smart routing.
+  render "$TEMPLATES/singbox-client/client-dual.json.tmpl" \
+    "$EXAMPLES/dual-node/sing-box-client-dual.json"
+
+  # VLESS + Vision (legacy) — Clash profile + share links.
   render "$TEMPLATES/clash/client-dual.yaml.tmpl" \
     "$EXAMPLES/dual-node/clash-profile.yaml"
 
@@ -136,8 +153,16 @@ Do not deploy these. Use `install/install.sh` to generate real values for your V
 
 ## Contents
 
-- `single-node/` — Minimum viable VLESS+Reality on one VPS.
-- `dual-node/`   — Residential leaf + data-center aggregator, with smart Clash routing that splits Telegram / Discord (data-center) from OpenAI / Anthropic / Netflix (residential).
+- `single-node/` — One VPS. Default protocol is **AnyTLS + Reality (AnyReality)**;
+  VLESS + Reality + Vision is kept as a legacy option.
+  - `11_anytls-reality_inbounds.json` — AnyReality server inbound (default).
+  - `sing-box-client-config.json` — full sing-box client config for AnyReality (default profile).
+  - `sing-box-client-anytls-outbound.json` — just the AnyReality outbound.
+  - `11_xtls-reality_inbounds.json`, `clash-profile.yaml`, `sing-box-client-outbound.json`, `vless-link.txt` — legacy VLESS + Vision.
+- `dual-node/` — Residential leaf + data-center aggregator, with smart routing that
+  splits Telegram / Discord (data-center) from OpenAI / Anthropic / Netflix (residential).
+  - `sing-box-client-dual.json` — AnyReality dual-node client config (default).
+  - `clash-profile.yaml`, `vless-links.txt` — legacy VLESS + Vision.
 EOF
 
   echo "examples/ regenerated."

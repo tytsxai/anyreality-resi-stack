@@ -1,6 +1,6 @@
-# subscription/ - Python subscription servers for reality-resi-stack
+# subscription/ - Python subscription servers for anyreality-resi-stack
 
-`subscription/` 是 `reality-resi-stack` 的零依赖 Python 订阅服务子模块。它把 sing-box VLESS Reality 节点转换成客户端可订阅的 HTTP 入口，并通过 `Subscription-Userinfo` 响应头显示流量卡片。
+`subscription/` 是 `anyreality-resi-stack` 的零依赖 Python 订阅服务子模块。它把 sing-box VLESS Reality 节点转换成客户端可订阅的 HTTP 入口，并通过 `Subscription-Userinfo` 响应头显示流量卡片。
 
 Two zero-dependency Python HTTP servers that turn the sing-box install into
 a proper subscription endpoint with usage cards. They are part of the main

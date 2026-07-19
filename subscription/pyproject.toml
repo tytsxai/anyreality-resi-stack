@@ -1,12 +1,14 @@
 [project]
-name = "reality-resi-stack-subscription"
-version = "1.0.0"
-description = "Zero-dependency Python subscription leaf and aggregator HTTP servers for the reality-resi-stack sing-box VLESS Reality deployment toolkit."
+name = "anyreality-resi-stack-subscription"
+version = "2.0.0"
+description = "Zero-dependency Python subscription leaf and aggregator HTTP servers for the anyreality-resi-stack sing-box AnyReality (AnyTLS+Reality) / VLESS Reality deployment toolkit."
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "GPL-3.0-only" }
 keywords = [
   "anthropic",
+  "anyreality",
+  "anytls",
   "chatgpt",
   "claude",
   "clash",
@@ -40,10 +42,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tytsxai/reality-resi-stack"
-Repository = "https://github.com/tytsxai/reality-resi-stack"
-Documentation = "https://github.com/tytsxai/reality-resi-stack/tree/main/docs"
-Issues = "https://github.com/tytsxai/reality-resi-stack/issues"
+Homepage = "https://github.com/tytsxai/anyreality-resi-stack"
+Repository = "https://github.com/tytsxai/anyreality-resi-stack"
+Documentation = "https://github.com/tytsxai/anyreality-resi-stack/tree/main/docs"
+Issues = "https://github.com/tytsxai/anyreality-resi-stack/issues"
 
 [tool.ruff]
 line-length = 100

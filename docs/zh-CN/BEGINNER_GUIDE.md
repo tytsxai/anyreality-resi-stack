@@ -4,7 +4,7 @@
 
 目标结果：
 
-- 服务器上跑起 sing-box + VLESS + Reality + xtls-rprx-vision
+- 服务器上跑起 sing-box + AnyTLS + REALITY（AnyReality，默认协议）
 - 本地客户端能通过订阅 URL 导入节点
 - 浏览器出口 IP 是你的 VPS IP
 - OpenAI / ChatGPT 链路可达
@@ -70,7 +70,7 @@ cat /etc/os-release | head -5
 强烈建议先 dry-run。dry-run 只打印将要执行的动作，不修改系统：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription \
@@ -81,7 +81,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/m
 
 - 系统预检
 - 安装 sing-box
-- 生成 UUID / Reality key / subscription token
+- 生成 ANYTLS 密码 / Reality key / subscription token（默认 AnyReality；遗留 vless-vision 生成 UUID）
 - 配置 `443/tcp`
 - 安装订阅服务到 `80/tcp`
 - 配置 UFW / fail2ban
@@ -94,7 +94,19 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/m
 确认 dry-run 没问题后，去掉 `--dry-run`：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --node-name "US-Resi-01" \
+  --sni addons.mozilla.org \
+  --with-subscription
+```
+
+默认安装即 **AnyReality（AnyTLS + REALITY）**，无需额外参数。AnyReality 用密码认证（`ANYTLS_PASSWORD`，存于 `/etc/anyreality-resi-stack/secrets.env`），没有 UUID / flow，同样无需域名和证书。
+
+如果你的客户端是 **Clash 系**（Clash Verge Rev 等），注意 Clash/mihomo **不支持 AnyReality**，需要改用遗留协议安装，加上 `--protocol vless-vision`：
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --protocol vless-vision \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
@@ -102,10 +114,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/m
 
 安装完成后，终端会打印完成卡。你需要保存：
 
-- `vless://...` 链接
+- AnyReality（默认）：完成卡里的 `password=` 等 AnyTLS 凭据；遗留 vless-vision 则是 `vless://...` 链接
 - `Subscription URL: http://YOUR_SERVER_IP/YOUR_TOKEN`
 
-不要把这两个链接发到公开 issue、论坛或截图里。它们包含你的节点凭据。
+不要把这些凭据发到公开 issue、论坛或截图里。它们包含你的节点凭据。
 
 ## 5. 在服务器上验证
 
@@ -121,7 +133,7 @@ sing-box check -C /etc/sing-box/conf
 
 ```bash
 curl -i http://127.0.0.1/healthz
-curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env | cut -d= -f2)
+curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env | cut -d= -f2)
 ```
 
 `curl -I` 里应能看到：
@@ -132,9 +144,14 @@ curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.
 
 ## 6. 导入客户端
 
-推荐优先使用订阅 URL，而不是手动粘贴 `vless://`。以后改节点、换 IP、上双节点时，客户端刷新订阅即可同步。
+推荐优先使用订阅 URL，而不是手动粘贴凭据。以后改节点、换 IP、上双节点时，客户端刷新订阅即可同步。
 
-常见客户端：
+默认 AnyReality 下，订阅返回的是完整的 **sing-box 配置（`profile.json`）**，因此要用 **sing-box 系客户端**：
+
+- 全平台：sing-box 官方 App
+- iOS / macOS / Android / Windows：Karing、Hiddify
+
+如果你在第 4 步用了 `--protocol vless-vision`（遗留），订阅返回的是 **Clash 配置（`profile.yaml`）**，才用 Clash 系客户端：
 
 - Windows：v2rayN
 - macOS / Windows / Linux：Clash Verge Rev
@@ -142,10 +159,11 @@ curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.
 - iOS：Shadowrocket
 - Android：v2rayNG / NekoBox
 
-具体点击路径见 [客户端导入](CLIENTS.md)。
+订阅 URL 本身不变，都是 `http://<server>/<TOKEN>/`。具体点击路径见 [客户端导入](CLIENTS.md)。
 
 导入后请把客户端模式设为：
 
+- sing-box / Karing / Hiddify：启动 VPN/TUN
 - Clash Verge / Stash：`Rule`
 - v2rayN：开启系统代理
 - 移动端：启动 VPN/TUN
@@ -203,9 +221,11 @@ curl --proxy socks5h://127.0.0.1:7891 -i https://api.openai.com/v1/models
 
 ## 10. 常见坑
 
-### 客户端不支持 Reality
+### 客户端不支持 AnyReality / Reality
 
-老版 Clash for Windows、ClashX 不支持 Reality。请换 Clash Verge Rev、Stash、v2rayN、v2rayNG、NekoBox 等维护中的客户端。
+默认的 AnyReality（AnyTLS + REALITY）只有 sing-box 系客户端支持；**Clash / mihomo 不支持 AnyReality**。想用 Clash 系客户端，就用 `--protocol vless-vision` 重装成遗留协议。
+
+遗留 vless-vision 用 Reality，老版 Clash for Windows、ClashX 也不支持 Reality，请换 Clash Verge Rev、Stash、v2rayN、v2rayNG、NekoBox 等维护中的客户端。
 
 ### 服务器防火墙没开端口
 
@@ -213,7 +233,7 @@ curl --proxy socks5h://127.0.0.1:7891 -i https://api.openai.com/v1/models
 
 ### 把凭据截图发出去了
 
-如果泄露了 `vless://`、订阅 URL、UUID、Reality private key 或 token，最稳妥的做法是重新生成节点凭据，或重新部署。
+如果泄露了 AnyTLS 密码、`vless://`、订阅 URL、UUID、Reality private key 或 token，最稳妥的做法是重新生成节点凭据，或重新部署。
 
 ### fail2ban 把自己锁了
 

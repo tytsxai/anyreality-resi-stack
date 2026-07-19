@@ -4,7 +4,7 @@ This guide is for people deploying their first self-hosted proxy node. You do no
 
 End state:
 
-- sing-box + VLESS + Reality + xtls-rprx-vision runs on your server
+- sing-box + AnyTLS + REALITY (AnyReality, the default protocol) runs on your server
 - your client imports a subscription URL
 - your browser exits through the VPS IP
 - OpenAI / ChatGPT connectivity works
@@ -70,7 +70,7 @@ Continue if you see Ubuntu 22.04+, Ubuntu 24.04+, or Debian 12+.
 Run a dry-run first. It prints what the installer would do without changing system state:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription \
@@ -81,7 +81,7 @@ Look for the expected phases:
 
 - OS preflight
 - sing-box install
-- UUID / Reality key / subscription token generation
+- ANYTLS password / Reality key / subscription token generation (default AnyReality; legacy vless-vision generates a UUID)
 - `443/tcp` service configuration
 - subscription service on `80/tcp`
 - UFW / fail2ban configuration
@@ -94,7 +94,19 @@ You can omit `--with-subscription`, but beginners should keep it. A subscription
 If the dry-run looks right, remove `--dry-run`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/main/install/install.sh) \
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --node-name "US-Resi-01" \
+  --sni addons.mozilla.org \
+  --with-subscription
+```
+
+The default install is **AnyReality (AnyTLS + REALITY)** — no extra flag needed. AnyReality authenticates with a password (`ANYTLS_PASSWORD`, stored in `/etc/anyreality-resi-stack/secrets.env`); there is no UUID or flow, and it still needs no domain or certificate.
+
+If your client is **Clash-based** (Clash Verge Rev, etc.), note that Clash/mihomo **does not support AnyReality**. Reinstall with the legacy protocol by adding `--protocol vless-vision`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --protocol vless-vision \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
@@ -102,7 +114,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/reality-resi-stack/m
 
 At the end, the installer prints a completion card. Save:
 
-- the `vless://...` link
+- AnyReality (default): the `password=` and other AnyTLS credentials on the card; legacy vless-vision prints a `vless://...` link
 - `Subscription URL: http://YOUR_SERVER_IP/YOUR_TOKEN`
 
 Do not paste these into public issues, forums, or screenshots. They contain node credentials.
@@ -121,7 +133,7 @@ If you enabled the subscription service:
 
 ```bash
 curl -i http://127.0.0.1/healthz
-curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env | cut -d= -f2)
+curl -I http://YOUR_SERVER_IP/$(grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env | cut -d= -f2)
 ```
 
 The `curl -I` response should include:
@@ -132,9 +144,14 @@ The `curl -I` response should include:
 
 ## 6. Import into a client
 
-Prefer the subscription URL over pasting `vless://` manually. When you change IPs, rename nodes, or add dual-node routing, clients can refresh the subscription.
+Prefer the subscription URL over pasting credentials manually. When you change IPs, rename nodes, or add dual-node routing, clients can refresh the subscription.
 
-Common clients:
+With the default AnyReality, the subscription returns a full **sing-box config (`profile.json`)**, so use a **sing-box-based client**:
+
+- All platforms: the official sing-box app
+- iOS / macOS / Android / Windows: Karing, Hiddify
+
+If you installed with `--protocol vless-vision` (legacy) in step 4, the subscription returns a **Clash config (`profile.yaml`)**; only then use a Clash-based client:
 
 - Windows: v2rayN
 - macOS / Windows / Linux: Clash Verge Rev
@@ -142,10 +159,11 @@ Common clients:
 - iOS: Shadowrocket
 - Android: v2rayNG / NekoBox
 
-Exact click paths are in [Client import](CLIENTS.md).
+The subscription URL itself is unchanged in both cases: `http://<server>/<TOKEN>/`. Exact click paths are in [Client import](CLIENTS.md).
 
 After importing, use:
 
+- sing-box / Karing / Hiddify: VPN/TUN started
 - Clash Verge / Stash: `Rule` mode
 - v2rayN: system proxy enabled
 - Mobile clients: VPN/TUN started
@@ -203,9 +221,11 @@ See [Dual-node smart routing](DUAL-NODE.md).
 
 ## 10. Common mistakes
 
-### The client does not support Reality
+### The client does not support AnyReality / Reality
 
-Old Clash for Windows and ClashX do not support Reality. Use maintained clients such as Clash Verge Rev, Stash, v2rayN, v2rayNG, or NekoBox.
+The default AnyReality (AnyTLS + REALITY) is only supported by sing-box-based clients; **Clash / mihomo does not support AnyReality**. To use a Clash-based client, reinstall with the legacy protocol via `--protocol vless-vision`.
+
+Legacy vless-vision uses Reality, and old Clash for Windows and ClashX do not support Reality either. Use maintained clients such as Clash Verge Rev, Stash, v2rayN, v2rayNG, or NekoBox.
 
 ### Firewall ports are closed
 
@@ -213,7 +233,7 @@ Both the cloud security group and the server firewall must allow `443/tcp`. If y
 
 ### You leaked credentials in a screenshot
 
-If you expose the `vless://` link, subscription URL, UUID, Reality private key, or token, rotate credentials or redeploy.
+If you expose the AnyTLS password, `vless://` link, subscription URL, UUID, Reality private key, or token, rotate credentials or redeploy.
 
 ### fail2ban locked you out
 

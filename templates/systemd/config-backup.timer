@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily backup for reality-resi-stack configuration
+Description=Daily backup for anyreality-resi-stack configuration
 
 [Timer]
 OnCalendar=daily

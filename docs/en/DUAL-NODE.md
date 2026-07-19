@@ -32,7 +32,7 @@ Counter-intuitively: data-center IP ranges (DigitalOcean, Vultr, Linode, RackNer
 
 ## The fix: domain-based smart routing
 
-`reality-resi-stack` is built around this insight: **acknowledge residential IPs aren't universally optimal; route by domain to whichever exit fits.**
+`anyreality-resi-stack` is built around this insight: **acknowledge residential IPs aren't universally optimal; route by domain to whichever exit fits.**
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,30 @@ flowchart LR
     Other --> Resi
 ```
 
-The exact rules live in `templates/clash/client-dual.yaml.tmpl`; an excerpt:
+With the default AnyReality protocol, the dual-node subscription returns a **full sing-box client config (`profile.json`)**: two `anytls` outbounds (residential node + data-center node) plus a set of sing-box `route` rules. Routing is a **static rule table** that maps domains/IPs straight to an outbound — not Clash's `url-test` latency groups. See [`examples/dual-node/sing-box-client-dual.json`](../../examples/dual-node/sing-box-client-dual.json) for the full example; an excerpt:
+
+```json
+"route": {
+  "rules": [
+    { "ip_is_private": true, "outbound": "direct" },
+
+    // Residential IP is the asset → route to the residential node
+    { "domain_suffix": ["openai.com", "chatgpt.com", "anthropic.com",
+        "claude.ai", "googleapis.com", "gemini.google.com", "netflix.com"],
+      "outbound": "US-Resi-01" },
+
+    // Residential IPs are downranked here → route to the DC node
+    { "domain_suffix": ["telegram.org", "t.me", "telegram.me",
+        "discord.com", "discord.gg"],
+      "outbound": "US-DC-01" },
+    { "ip_cidr": ["91.108.4.0/22", "91.108.16.0/22", "149.154.160.0/20"],
+      "outbound": "US-DC-01" }
+  ],
+  "final": "US-Resi-01"
+}
+```
+
+Legacy vless-vision still uses Clash: the subscription returns `profile.yaml` and expresses routing with Clash `proxy-groups` + `rules`. The rule source is in `templates/clash/client-dual.yaml.tmpl`; an excerpt:
 
 ```yaml
 rules:
@@ -88,13 +111,14 @@ Assumes you already have the residential leaf running per [DEPLOYMENT.md](DEPLOY
 ### Step 1: get residential-node values from the leaf
 
 ```bash
-grep ^SUB_TOKEN /etc/reality-resi-stack/secrets.env
-grep ^UUID /etc/reality-resi-stack/secrets.env
-grep ^REALITY_PUBLIC_KEY /etc/reality-resi-stack/secrets.env
+grep ^SUB_TOKEN /etc/anyreality-resi-stack/secrets.env
+grep ^ANYTLS_PASSWORD /etc/anyreality-resi-stack/secrets.env   # default AnyReality
+grep ^UUID /etc/anyreality-resi-stack/secrets.env              # legacy vless-vision
+grep ^REALITY_PUBLIC_KEY /etc/anyreality-resi-stack/secrets.env
 ip route get 1.1.1.1 | grep -oP 'src \K\S+'   # leaf's public IP
 ```
 
-You need the leaf's `SUB_TOKEN`, `UUID`, `REALITY_PUBLIC_KEY`, and public IP. Do not copy `REALITY_PRIVATE_KEY` to the backup node, and do not paste these values into public issues.
+You need the leaf's `SUB_TOKEN`, `REALITY_PUBLIC_KEY`, public IP, and the auth credential: `ANYTLS_PASSWORD` for the default AnyReality, or `UUID` for legacy vless-vision. Do not copy `REALITY_PRIVATE_KEY` to the backup node, and do not paste these values into public issues.
 
 ### Step 2: on the data-center VPS
 
@@ -104,6 +128,7 @@ RESI_SERVER_IP=<LEAF_IP>
 RESI_UUID=<LEAF_UUID>
 RESI_REALITY_PUBLIC_KEY=<LEAF_REALITY_PUBLIC_KEY>
 RESI_NODE_NAME=US-Resi-01
+RESI_ANYTLS_PASSWORD=<LEAF_ANYTLS_PASSWORD>
 RESI_SNI=addons.mozilla.org
 RESI_INBOUND_PORT=443
 EOF
@@ -116,12 +141,14 @@ bash <(curl -fsSL .../install.sh) \
 ```
 
 Aggregator mode will:
-- Install sing-box (the DC node's own VLESS inbound)
+- Install sing-box (the DC node's own inbound — an AnyTLS inbound under the default AnyReality, a VLESS inbound under legacy)
 - Install the aggregator subscription server
-- Render the dual-node Clash YAML (two proxies + smart routing rules)
+- Render the dual-node client subscription (default AnyReality → sing-box `profile.json` with two `anytls` outbounds + the sing-box route rules above; legacy vless-vision → Clash `profile.yaml`)
 - Configure cache fallback
 
-The `RESI_*` variables are used to write the residential node into the client profile served by the aggregator. The data-center node's `DC_*` values default to the UUID, Reality public key, node name, and public IP generated on this install. If `RESI_SERVER_IP`, `RESI_UUID`, `RESI_REALITY_PUBLIC_KEY`, or `RESI_NODE_NAME` is missing, the installer stops before rendering a broken subscription.
+The `RESI_*` variables write the residential node into the client profile served by the aggregator. Under the default AnyReality, the aggregator needs the residential node's **AnyTLS password** — the `ANYTLS_PASSWORD` you read off the leaf in Step 1 — supplied via `RESI_ANYTLS_PASSWORD` (in the `--config` file or as an environment variable). The data-center node's own password defaults to the local `ANYTLS_PASSWORD`. If `RESI_SERVER_IP`, `RESI_UUID`, `RESI_REALITY_PUBLIC_KEY`, `RESI_NODE_NAME` (or, under AnyReality, `RESI_ANYTLS_PASSWORD`) is missing, the installer stops before rendering a broken subscription.
+
+> Legacy vless-vision authenticates with a UUID and does not need `RESI_ANYTLS_PASSWORD`; the DC node's `DC_*` values default to the UUID, Reality public key, node name, and public IP generated on this install.
 
 ### Step 3: clients subscribe only to the aggregator URL
 
@@ -129,7 +156,7 @@ The `RESI_*` variables are used to write the residential node into the client pr
 http://<DC_IP>/<AGGREGATOR_SUB_TOKEN>/
 ```
 
-This URL gives every client both nodes and all rules. **No extra client configuration needed.**
+This URL gives every client both nodes and all rules (a `profile.json` under the default AnyReality, a `profile.yaml` under legacy). **No extra client configuration needed.** Import it with a client that matches the protocol: a sing-box-based client for AnyReality, a Clash-based client for legacy vless-vision.
 
 ---
 
@@ -172,7 +199,7 @@ The defaults cover the two most common "residential is asset vs residential is d
 - **GitHub / npm**: route to DC (GitHub rate-limits residential IPs harder than DC IPs)
 - **Reddit / Twitter**: route to DC (their anti-bot is more aggressive on residential subnets)
 
-Edit `/etc/reality-resi-stack/files/profile.yaml` directly (or re-render from a customized template) and restart the aggregator. Clients pick up the new rules on the next subscription refresh.
+Under the default AnyReality, edit `route.rules` in `/etc/anyreality-resi-stack/files/profile.json` (add `domain_suffix` entries to the desired `outbound`); under legacy vless-vision, edit the `rules:` section of `/etc/anyreality-resi-stack/files/profile.yaml`. Then restart the aggregator. Clients pick up the new rules on the next subscription refresh.
 
 ---
 

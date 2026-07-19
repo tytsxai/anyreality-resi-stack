@@ -16,16 +16,23 @@ sing-box check -C /etc/sing-box/conf
 
 ## 客户端连不上
 
+**先确认协议匹配。** 默认协议是 AnyReality（AnyTLS + Reality），只能用 **sing-box 系客户端**（sing-box、SFA/SFI/SFT、支持 anytls 的分支）。用 **Clash/mihomo 导入 AnyReality 订阅会失败**——Clash 不认 `anytls+reality`。需要 Clash 的用户请用 `--protocol vless-vision` 重装成遗留的 VLESS+Reality。
+
 | 可能原因 | 排查 |
 |---|---|
+| 用 Clash 导入了 AnyReality 订阅 | 换 sing-box 系客户端，或用 `--protocol vless-vision` 重装 |
 | 云厂商安全组没放 `443/tcp` | 登入控制台检查安全组 |
 | UFW 没放 `443/tcp` | `ufw status` |
-| 客户端 UUID 不一致 | 比对客户端 vless:// 链接里的 UUID 与服务端 `secrets.env` |
-| 客户端 `public-key` 填错 | 比对客户端 `pbk=` 与服务端的 `REALITY_PUBLIC_KEY` |
-| 客户端 `servername` 与服务端 `server_name` 不一致 | 都应该是同一个 SNI（如 `addons.mozilla.org`） |
-| 客户端不支持 Reality 或 `xtls-rprx-vision` | 用最新版 v2rayN / Clash Verge / sing-box |
+| AnyReality：客户端 `password` 与服务端 `ANYTLS_PASSWORD` 不一致 | 比对客户端 password 与 `/etc/anyreality-resi-stack/secrets.env` 里的 `ANYTLS_PASSWORD`（AnyReality 无 UUID / flow） |
+| 遗留 vless-vision：客户端 UUID 不一致 | 比对客户端 vless:// 链接里的 UUID 与服务端 `secrets.env` |
+| 客户端 Reality `public-key` 填错 | 比对客户端 `pbk=` / `public_key` 与服务端的 `REALITY_PUBLIC_KEY` |
+| 客户端 Reality `short_id` 不一致 | 比对客户端 `short_id` 与服务端配置 |
+| 客户端 `servername` / SNI 与服务端 `server_name` 不一致 | 都应该是同一个 SNI（如 `addons.mozilla.org`） |
+| 客户端不支持 Reality（遗留还需 `xtls-rprx-vision`） | 用最新版 sing-box / v2rayN / Clash Verge |
 | 服务器已有 nginx/caddy/apache 占 443 | `ss -tlnp \| grep 443` 看占用进程 |
 | sing-box 配置有错 | `sing-box check -C /etc/sing-box/conf` |
+
+> 入站配置文件同一时刻只应存在一个：AnyReality 是 `/etc/sing-box/conf/11_anytls-reality_inbounds.json`，遗留是 `11_xtls-reality_inbounds.json`。两个都在会抢 `443` 端口导致 `sing-box check` 报错。
 
 ---
 
@@ -96,18 +103,18 @@ journalctl -u subscription-leaf -n 50 --no-pager
 
 ```bash
 CURRENT_TOTAL=$(( $(cat /sys/class/net/eth0/statistics/rx_bytes) + $(cat /sys/class/net/eth0/statistics/tx_bytes) ))
-STATE_USED=$(python3 -c "import json; print(int(json.load(open('/var/lib/reality-resi-stack/usage-state.json'))['used_bytes']))")
+STATE_USED=$(python3 -c "import json; print(int(json.load(open('/var/lib/anyreality-resi-stack/usage-state.json'))['used_bytes']))")
 BACKEND_USED=900000000000   # 替换成商家后台显示的本月已用字节数
 
 OFFSET=$((BACKEND_USED - STATE_USED))
-sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/reality-resi-stack/subscription-leaf.env
+sudo sed -i "s/^USAGE_OFFSET_BYTES=.*/USAGE_OFFSET_BYTES=${OFFSET}/" /etc/anyreality-resi-stack/subscription-leaf.env
 sudo systemctl restart subscription-leaf
 ```
 
 如果商家不是每月 1 号重置流量，先把 `BILLING_CYCLE_DAY` 设成商家重置日：
 
 ```bash
-sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/reality-resi-stack/subscription-leaf.env
+sudo sed -i "s/^BILLING_CYCLE_DAY=.*/BILLING_CYCLE_DAY=11/" /etc/anyreality-resi-stack/subscription-leaf.env
 ```
 
 如果 `usage-state.json` 还不存在或刚被恢复清空，leaf 会在下一次后台采样或 `/status` 请求时自动建状态。`USAGE_OFFSET_BYTES` 可以为负数；服务端会把最终返回值钳到不低于 0。
@@ -123,7 +130,7 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername addons.mozilla.org 2>
 应该返回 `addons.mozilla.org` 的证书 subject。如果返回别的（比如 sing-box 的自签证书 / `cannot connect`）：
 
 - **没装 sing-box / 没启动**：`systemctl status sing-box`
-- **SNI 配错**：检查 `/etc/sing-box/conf/11_xtls-reality_inbounds.json` 的 `tls.server_name` 和 `reality.handshake.server` 必须**完全一致**
+- **SNI 配错**：检查入站文件（AnyReality 是 `11_anytls-reality_inbounds.json`，遗留是 `11_xtls-reality_inbounds.json`）里的 `tls.server_name` 和 `tls.reality.handshake.server` 必须**完全一致**
 - **服务器到 SNI 站的握手网络出问题**：服务器自己 `curl -v https://addons.mozilla.org/` 看能不能成
 - **Reality 私钥与客户端公钥不匹配**：在服务器重新跑 `sing-box generate reality-keypair` 获取一对，更新服务端 `private_key` 和客户端 `public-key`
 
@@ -154,7 +161,7 @@ apt-get install -y sing-box=<上一个能跑的版本号>
 apt-mark hold sing-box   # 暂时不让 apt 升级
 ```
 
-再到 reality-resi-stack 这边开 issue。
+再到 anyreality-resi-stack 这边开 issue。
 
 ---
 
@@ -177,22 +184,22 @@ sudo systemctl restart chrony
 ## 配置改坏 / 想回滚
 
 ```bash
-ls /var/backups/reality-resi-stack/
+ls /var/backups/anyreality-resi-stack/
 # 选一个时间戳较新的
-tar -tzf /var/backups/reality-resi-stack/reality-resi-stack-2026-05-17-120000.tar.gz | head
+tar -tzf /var/backups/anyreality-resi-stack/anyreality-resi-stack-2026-05-17-120000.tar.gz | head
 ```
 
 恢复（先停服务）：
 
 ```bash
 systemctl stop sing-box
-tar -xzf /var/backups/reality-resi-stack/reality-resi-stack-XXXX.tar.gz -C /
+tar -xzf /var/backups/anyreality-resi-stack/anyreality-resi-stack-XXXX.tar.gz -C /
 systemctl daemon-reload
 systemctl start sing-box
 sing-box check -C /etc/sing-box/conf
 ```
 
-⚠️ 备份归档**不含** `var/lib/reality-resi-stack/usage-state.json` 或 `usage-cache.json`（运行时数据），所以恢复后流量计数会从恢复时刻重新起算。归档会包含 `/etc/reality-resi-stack/`，里面有密钥和 token，不能公开传播。恢复后可以用上面"流量统计漂移"小节的命令补一个 offset。
+⚠️ 备份归档**不含** `var/lib/reality-resi-stack/usage-state.json` 或 `usage-cache.json`（运行时数据），所以恢复后流量计数会从恢复时刻重新起算。归档会包含 `/etc/anyreality-resi-stack/`，里面有密钥和 token，不能公开传播。恢复后可以用上面"流量统计漂移"小节的命令补一个 offset。
 
 ---
 

@@ -12,5 +12,13 @@ Do not deploy these. Use `install/install.sh` to generate real values for your V
 
 ## Contents
 
-- `single-node/` — Minimum viable VLESS+Reality on one VPS.
-- `dual-node/`   — Residential leaf + data-center aggregator, with smart Clash routing that splits Telegram / Discord (data-center) from OpenAI / Anthropic / Netflix (residential).
+- `single-node/` — One VPS. Default protocol is **AnyTLS + Reality (AnyReality)**;
+  VLESS + Reality + Vision is kept as a legacy option.
+  - `11_anytls-reality_inbounds.json` — AnyReality server inbound (default).
+  - `sing-box-client-config.json` — full sing-box client config for AnyReality (default profile).
+  - `sing-box-client-anytls-outbound.json` — just the AnyReality outbound.
+  - `11_xtls-reality_inbounds.json`, `clash-profile.yaml`, `sing-box-client-outbound.json`, `vless-link.txt` — legacy VLESS + Vision.
+- `dual-node/` — Residential leaf + data-center aggregator, with smart routing that
+  splits Telegram / Discord (data-center) from OpenAI / Anthropic / Netflix (residential).
+  - `sing-box-client-dual.json` — AnyReality dual-node client config (default).
+  - `clash-profile.yaml`, `vless-links.txt` — legacy VLESS + Vision.
