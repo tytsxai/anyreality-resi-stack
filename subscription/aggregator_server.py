@@ -68,7 +68,10 @@ cache_write_lock = threading.Lock()
 def read_remote_status() -> dict:
     if not REMOTE_STATUS_URL:
         return {}
-    request = Request(REMOTE_STATUS_URL, headers={"User-Agent": "AnyRealityResiStack-Aggregator/2.0"})
+    request = Request(
+        REMOTE_STATUS_URL,
+        headers={"User-Agent": "AnyRealityResiStack-Aggregator/2.0"},
+    )
     with urlopen(request, timeout=REMOTE_TIMEOUT_SECONDS) as response:  # noqa: S310
         body = response.read(MAX_REMOTE_STATUS_BYTES + 1)
     if len(body) > MAX_REMOTE_STATUS_BYTES:
