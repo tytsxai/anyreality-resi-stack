@@ -44,7 +44,8 @@ The project is designed for people who already own VPS servers. It does not sell
 
 ## Key docs
 
-- [README.md](README.md): bilingual landing page, project summary, quick start, architecture, features, limits, FAQ.
+- [README.md](README.md): bilingual (Chinese-first) landing page, project summary, quick start, architecture, features, limits, FAQ. Authoritative source, updated first.
+- [README.en.md](README.en.md): English-only edition of the landing page — fit check, project summary, quick start, post-install steps, architecture, features, tool-selection matrix, security notes, FAQ, docs map.
 - [docs/README.md](docs/README.md): documentation index and code map.
 - [docs/zh-CN/BEGINNER_GUIDE.md](docs/zh-CN/BEGINNER_GUIDE.md) and [docs/en/BEGINNER_GUIDE.md](docs/en/BEGINNER_GUIDE.md): beginner path from VPS prerequisites and SSH to dry-run, installation, subscription import, and OpenAI/IP verification.
 - [docs/zh-CN/COMPARISON.md](docs/zh-CN/COMPARISON.md) and [docs/en/COMPARISON.md](docs/en/COMPARISON.md): scenario-specific scoring against 3x-ui, x-ui, manual configs, and commercial services for residential-IP self-hosted VLESS Reality.

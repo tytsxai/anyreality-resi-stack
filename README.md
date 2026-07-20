@@ -13,7 +13,7 @@
 [![Release](https://img.shields.io/github/v/release/tytsxai/anyreality-resi-stack)](https://github.com/tytsxai/anyreality-resi-stack/releases)
 [![GitHub stars](https://img.shields.io/github/stars/tytsxai/anyreality-resi-stack?style=social)](https://github.com/tytsxai/anyreality-resi-stack/stargazers)
 
-[新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
+[English README](README.en.md) · [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
 
 > **Search keywords / 搜索关键词**: AnyReality, AnyTLS Reality, sing-box AnyTLS Reality installer, AnyReality 一键脚本, AnyReality 住宅 IP, residential IP VLESS, VLESS Reality residential proxy, sing-box residential installer, VLESS+Reality 一键脚本, OpenAI 住宅 IP 代理, ChatGPT 住宅 IP 出口, Telegram 住宅 IP 上传慢, Discord 住宅 IP 降权, Clash 域名分流, 双节点智能分流, alternative to 3x-ui for residential VPS
 
@@ -85,7 +85,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
 4. 想知道国内网站为什么是直连的、怎么加自己的域名，看 [分流规则](docs/zh-CN/ROUTING.md)。
 5. 需要确认它和 3x-ui / x-ui / 手写配置怎么选，先看 [同类评分对比](docs/zh-CN/COMPARISON.md)。
 
-English: if this is your first AnyReality / VLESS Reality deployment, start with the [beginner guide](docs/en/BEGINNER_GUIDE.md), then use the one-line installer below. The [comparison page](docs/en/COMPARISON.md) explains when this stack is a better fit than 3x-ui, x-ui, manual configs, or commercial panels.
+English: the full English edition of this page is [README.en.md](README.en.md). If this is your first AnyReality / VLESS Reality deployment, start with the [beginner guide](docs/en/BEGINNER_GUIDE.md), then use the one-line installer below. The [comparison page](docs/en/COMPARISON.md) explains when this stack is a better fit than 3x-ui, x-ui, manual configs, or commercial panels.
 
 ## 为什么选它 | Why choose this stack
 

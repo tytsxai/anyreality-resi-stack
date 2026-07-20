@@ -50,6 +50,7 @@
 
 ## English docs
 
+- [English README](../README.en.md): Full English edition of the landing page — 30-second fit check, project summary, quick start, post-install steps, architecture, features, tool-selection matrix, security boundaries, and FAQ.
 - [Beginner guide](en/BEGINNER_GUIDE.md): VPS prerequisites, SSH, `--dry-run`, install, saving the subscription URL, client import, and OpenAI/IP verification.
 - [Comparison](en/COMPARISON.md): Scores 3x-ui, x-ui, manual configs, and commercial services for the residential-IP self-hosted AnyReality / VLESS Reality scenario.
 - [Deployment](en/DEPLOYMENT.md): Blank VPS to running AnyReality node (with the legacy `--protocol vless-vision` option), including one-line install, config files, verification, and uninstall.
