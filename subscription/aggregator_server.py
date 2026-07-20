@@ -28,7 +28,7 @@ from contextlib import suppress
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 from urllib.request import Request, urlopen
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -178,6 +178,18 @@ def content_type_for(path: Path) -> str:
     return CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
 
 
+def content_disposition_for(name: str) -> str:
+    """Build an RFC 6266 / RFC 5987 Content-Disposition value.
+
+    Clients that cannot parse the header fall back to inventing a numeric id
+    for the imported profile, so emit BOTH forms: a plain ASCII ``filename=``
+    that every client understands, and a percent-encoded ``filename*=`` that
+    carries the exact (possibly non-ASCII) name for clients that do.
+    """
+    ascii_name = name.encode("ascii", "replace").decode("ascii").replace('"', "_")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name, safe='')}"
+
+
 class AggregatorHandler(BaseHTTPRequestHandler):
     server_version = "AnyRealityResiStack-Aggregator/2.0"
 
@@ -216,10 +228,7 @@ class AggregatorHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Profile-Title", PROFILE_TITLE)
         self.send_header("Profile-Update-Interval", UPDATE_INTERVAL_HOURS)
-        self.send_header(
-            "Content-Disposition",
-            f"attachment; filename*=UTF-8''{file_path.name}",
-        )
+        self.send_header("Content-Disposition", content_disposition_for(file_path.name))
         self.send_header(
             "Subscription-Userinfo",
             f"upload=0; download={used_bytes}; total={TOTAL_BYTES}; expire={EXPIRE_TS}",

@@ -147,6 +147,20 @@ phase_firewall() {
   if [[ -n "${SSH_PORT:-}" ]]; then
     run ufw allow "${SSH_PORT}/tcp"
   fi
+
+  # Anti-lockout: `--ssh-port N` only tells UFW which port to keep open, it does
+  # not move sshd (that is `--harden-ssh`). Passing a port sshd is not actually
+  # listening on would otherwise fence us out the moment `ufw --force enable`
+  # runs. Always allow whatever sshd is really bound to as well.
+  local live_ssh_ports port
+  live_ssh_ports="$(ss -tlnpH 2>/dev/null |
+    awk '/"sshd"/ {split($4, a, ":"); print a[length(a)]}' | sort -un || true)"
+  for port in $live_ssh_ports; do
+    if [[ "$port" != "${SSH_PORT:-}" ]]; then
+      warn "sshd is listening on tcp/$port but --ssh-port is '${SSH_PORT:-unset}' — allowing tcp/$port too to avoid lockout"
+      run ufw allow "${port}/tcp"
+    fi
+  done
   if [[ "${WITH_SUBSCRIPTION:-0}" == "1" || "${WITH_AGGREGATOR:-0}" == "1" ]]; then
     run ufw allow 80/tcp
   fi

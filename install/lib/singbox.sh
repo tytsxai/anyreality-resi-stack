@@ -138,21 +138,32 @@ phase_generate_keys() {
 
   if [[ -f "$secrets" ]]; then
     info "Secrets already exist at $secrets — reusing (will not regenerate)"
-    # shellcheck source=/dev/null
-    if [[ "$DRY_RUN" != "1" ]]; then
-      . "$secrets"
-      : "${UUID:?}" "${REALITY_PRIVATE_KEY:?}" "${REALITY_PUBLIC_KEY:?}" "${SUB_TOKEN:?}"
+    if [[ "$DRY_RUN" == "1" ]]; then
+      # Never read real secrets in dry-run, but the later phases still need
+      # every template variable defined or render_template aborts. Export
+      # obvious placeholders so `--dry-run` works on an already-installed host.
+      UUID="00000000-0000-0000-0000-000000000000"
+      REALITY_PRIVATE_KEY="<existing-private-key-unchanged>"
+      REALITY_PUBLIC_KEY="<existing-public-key-unchanged>"
+      SUB_TOKEN="<existing-sub-token-unchanged>"
       SHORT_ID="${SHORT_ID:-}"
-      # Backward-compat: installs predating AnyReality have no ANYTLS_PASSWORD.
-      # Mint one and append so switching to --protocol anytls-reality just works,
-      # without disturbing the existing UUID / Reality keypair.
-      if [[ -z "${ANYTLS_PASSWORD:-}" ]]; then
-        ANYTLS_PASSWORD="$(gen_anytls_password)"
-        printf 'ANYTLS_PASSWORD=%s\n' "$ANYTLS_PASSWORD" >>"$secrets"
-        info "Added ANYTLS_PASSWORD to existing secrets.env"
-      fi
+      ANYTLS_PASSWORD="<existing-anytls-password-unchanged>"
       export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID ANYTLS_PASSWORD
+      return 0
     fi
+    # shellcheck source=/dev/null
+    . "$secrets"
+    : "${UUID:?}" "${REALITY_PRIVATE_KEY:?}" "${REALITY_PUBLIC_KEY:?}" "${SUB_TOKEN:?}"
+    SHORT_ID="${SHORT_ID:-}"
+    # Backward-compat: installs predating AnyReality have no ANYTLS_PASSWORD.
+    # Mint one and append so switching to --protocol anytls-reality just works,
+    # without disturbing the existing UUID / Reality keypair.
+    if [[ -z "${ANYTLS_PASSWORD:-}" ]]; then
+      ANYTLS_PASSWORD="$(gen_anytls_password)"
+      printf 'ANYTLS_PASSWORD=%s\n' "$ANYTLS_PASSWORD" >>"$secrets"
+      info "Added ANYTLS_PASSWORD to existing secrets.env"
+    fi
+    export UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SUB_TOKEN SHORT_ID ANYTLS_PASSWORD
     return 0
   fi
 
