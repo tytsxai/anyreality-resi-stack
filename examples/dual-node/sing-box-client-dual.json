@@ -1,7 +1,40 @@
 {
   "log": {
-    "level": "info",
+    "level": "warn",
     "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "tls",
+        "tag": "dns-remote",
+        "server": "1.1.1.1",
+        "detour": "Example-Resi-01"
+      },
+      {
+        "type": "udp",
+        "tag": "dns-direct",
+        "server": "223.5.5.5"
+      },
+      {
+        "type": "udp",
+        "tag": "dns-direct-backup",
+        "server": "119.29.29.29"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": "geosite-category-ads-all",
+        "action": "reject"
+      },
+      {
+        "rule_set": "geosite-cn",
+        "server": "dns-direct"
+      }
+    ],
+    "final": "dns-remote",
+    "strategy": "ipv4_only",
+    "independent_cache": true
   },
   "inbounds": [
     {
@@ -64,11 +97,105 @@
     }
   ],
   "route": {
-    "rules": [
+    "rule_set": [
       {
-        "ip_is_private": true,
+        "type": "remote",
+        "tag": "geosite-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+        "download_detour": "Example-Resi-01",
+        "update_interval": "7d"
+      },
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
+        "download_detour": "Example-Resi-01",
+        "update_interval": "7d"
+      },
+      {
+        "type": "remote",
+        "tag": "geosite-category-ads-all",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+        "download_detour": "Example-Resi-01",
+        "update_interval": "7d"
+      }
+    ],
+    "rules": [
+      { "action": "sniff" },
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "ip_is_private": true, "outbound": "direct" },
+      { "rule_set": "geosite-category-ads-all", "action": "reject" },
+      {
+        "domain_suffix": [
+          "12306.cn",
+          "126.com",
+          "163.com",
+          "36kr.com",
+          "abchina.com",
+          "alicdn.com",
+          "alipay.com",
+          "aliyun.com",
+          "aliyuncs.com",
+          "amap.com",
+          "autonavi.com",
+          "baidu.com",
+          "baiducontent.com",
+          "bankcomm.com",
+          "bankofchina.com",
+          "bdstatic.com",
+          "bilibili.com",
+          "biligame.com",
+          "ccb.com",
+          "com.cn",
+          "csdn.net",
+          "ctrip.com",
+          "dianping.com",
+          "didiglobal.com",
+          "dingtalk.com",
+          "douban.com",
+          "douyin.com",
+          "edu.cn",
+          "ele.me",
+          "feishu.cn",
+          "gov.cn",
+          "huxiu.com",
+          "icbc.com.cn",
+          "iqiyi.com",
+          "ixigua.com",
+          "jd.com",
+          "jdpay.com",
+          "kuaishou.com",
+          "larksuite.com",
+          "lianjia.com",
+          "mafengwo.cn",
+          "meituan.com",
+          "org.cn",
+          "pinduoduo.com",
+          "qq.com",
+          "qunar.com",
+          "sankuai.com",
+          "sina.com.cn",
+          "sinaimg.cn",
+          "taobao.com",
+          "tencent.com",
+          "tmall.com",
+          "toutiao.com",
+          "wechat.com",
+          "weibo.com",
+          "xiaohongshu.com",
+          "ximalaya.com",
+          "xueqiu.com",
+          "youku.com",
+          "zhihu.com",
+          "zhipin.com"
+        ],
         "outbound": "direct"
       },
+      { "rule_set": "geosite-cn", "outbound": "direct" },
+      { "rule_set": "geoip-cn", "outbound": "direct" },
       {
         "domain_suffix": [
           "openai.com",
@@ -112,9 +239,17 @@
           "149.154.160.0/20"
         ],
         "outbound": "Example-DC-01"
-      }
+      },
+      { "network": "udp", "port": 443, "action": "reject" }
     ],
     "final": "Example-Resi-01",
-    "auto_detect_interface": true
+    "auto_detect_interface": true,
+    "default_domain_resolver": "dns-direct"
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "store_rdrc": true
+    }
   }
 }
