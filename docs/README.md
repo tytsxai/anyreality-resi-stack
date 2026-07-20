@@ -45,6 +45,7 @@
 - [双节点 + 智能分流](zh-CN/DUAL-NODE.md): 住宅节点与数据中心节点如何协作，为什么 Telegram / Discord 适合走 DC，OpenAI / Anthropic / Netflix 适合走住宅出口。
 - [订阅服务设计](zh-CN/SUBSCRIPTION.md): `leaf_server.py`、`aggregator_server.py`、`Subscription-Userinfo`、`/healthz`、`/<TOKEN>/status` 和缓存回退逻辑。
 - [客户端导入](zh-CN/CLIENTS.md): v2rayN、Clash Verge、Stash、Shadowrocket、v2rayNG、NekoBox、sing-box 客户端导入方式。
+- [分流规则](zh-CN/ROUTING.md): 客户端配置的四层路由（内网直连 / 广告拦截 / 国内直连 / 兜底走节点）、为什么内联安全网要排在 `geosite-cn` 之前、怎么增删国内平台、怎么验证某域名确实直连。
 - [故障排查](zh-CN/TROUBLESHOOTING.md): 连接失败、Reality 握手、订阅卡片、流量统计漂移、Telegram 上传慢、fail2ban 锁定等问题。
 
 ## English docs
@@ -55,6 +56,7 @@
 - [Dual-node smart routing](en/DUAL-NODE.md): Residential node + data-center fallback, with domain rules for OpenAI/Anthropic/Netflix vs Telegram/Discord.
 - [Subscription server design](en/SUBSCRIPTION.md): Leaf and aggregator HTTP servers, `Subscription-Userinfo`, `/healthz`, `/<TOKEN>/status`, and cache fallback.
 - [Client import](en/CLIENTS.md): v2rayN, Clash Verge, Stash, Shadowrocket, v2rayNG, NekoBox, and sing-box client setup.
+- [Client routing rules](en/ROUTING.md): the four-layer route stack (private direct / ad block / China direct / proxy fallback), why the inline safety net precedes `geosite-cn`, how to add domains, and how to verify a domain really goes direct.
 - [Troubleshooting](en/TROUBLESHOOTING.md): Client failures, Reality handshakes, usage-card issues, traffic-counter drift, Telegram upload stalls, and fail2ban lockouts.
 
 ## 代码入口 | Code map

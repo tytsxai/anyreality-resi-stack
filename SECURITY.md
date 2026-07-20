@@ -27,6 +27,21 @@ This is a tool for individuals running their own VPS, not a hardened enterprise 
 
 If you discover a credential leak, **do not** open a public issue. Instead, [open a draft security advisory](https://github.com/tytsxai/anyreality-resi-stack/security/advisories/new).
 
+## Subscription URL exposure | 订阅地址的暴露面
+
+Read this before enabling `--with-subscription` or `--with-aggregator`.
+
+The subscription server listens on **plain HTTP :80** and serves the client profile at `http://<server-ip>/<SUB_TOKEN>/`. That profile contains everything needed to use your node — the AnyTLS password (or the VLESS UUID), the Reality public key, and the short id. Consequences you are accepting:
+
+| Risk | Detail | Mitigation |
+|---|---|---|
+| **Cleartext in transit** | Anyone on the path (ISP, transit, Wi-Fi operator) can read the profile and the token when a client refreshes | Put a TLS reverse proxy in front of :80, or fetch the profile once over `scp` and disable the subscription server |
+| **Token is the only secret** | The token is a UUID generated per host; there is no password, rate limit, or IP allowlist. Anyone who learns the URL has your node | Never paste the full URL into issues, screenshots, pastebins, or chat groups. Treat it exactly like a password |
+| **Guessable sibling paths** | Do not place backups, `*.bak`, or extra profile copies inside `FILE_DIR` — they are served under the same token path | Keep backups in `/var/backups/anyreality-resi-stack/`, which is never web-served |
+| **Rotation is disruptive** | Rotating `SUB_TOKEN` or the node password invalidates every already-imported client | Rotate on real evidence of exposure, not on a schedule |
+
+中文：订阅服务是 **HTTP 明文的 :80**，`http://<IP>/<SUB_TOKEN>/` 返回的配置里含节点密码。这意味着：链路上任何人都能读到；token 是唯一凭证，泄露即等于送出节点；`FILE_DIR` 里的任何文件都会被同一 token 路径下发，**备份文件绝不要放进去**（放 `/var/backups/anyreality-resi-stack/`）。需要更强保护就在前面加一层 TLS 反代，或者用 `scp` 取一次配置后直接关掉订阅服务。轮换 token / 密码会让所有已导入的客户端断连，**有实际泄露证据再轮换，不要定期轮换**。
+
 ## Reporting vulnerabilities | 漏洞上报
 
 Open a draft security advisory (preferred), or email the maintainer privately. **Do not** file public GitHub issues for unpatched vulnerabilities.
