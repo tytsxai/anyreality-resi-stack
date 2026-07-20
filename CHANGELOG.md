@@ -7,6 +7,24 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Client profiles now ship with complete routing rules.** The generated sing-box profiles previously only had an `ip_is_private → direct` rule and sent *everything* else through the node — which is unusable in TUN mode, where there is no global/direct toggle and domestic traffic silently detours abroad. Both `client-single.json.tmpl` and `client-dual.json.tmpl` now render a four-layer stack: baseline (`sniff`, `hijack-dns`, private-direct), ad/tracker `reject`, China-direct, and a fallback that rejects UDP/443 before sending the rest to the node. The Clash templates gain the matching ad-block rule and inline safety net.
+- China-direct is deliberately two-tier: an inline ~60-entry `domain_suffix` safety net is evaluated *before* the remote `geosite-cn` / `geoip-cn` rule sets. The rule sets are downloaded from GitHub, which is commonly unreachable at first start — when that download fails the set is empty and every domestic site gets proxied. The inline list needs no network request, so high-traffic domestic services stay direct regardless. `download_detour` routes rule-set downloads through the node.
+- Client profiles now include a DNS section that splits resolution (domestic names via `223.5.5.5`, everything else over DoT through the node) plus `experimental.cache_file` for rule-set persistence.
+- [`docs/zh-CN/ROUTING.md`](docs/zh-CN/ROUTING.md) / [`docs/en/ROUTING.md`](docs/en/ROUTING.md): the routing model, how to add or remove domains, how to change the defaults, and how to verify a domain really goes direct without being fooled by a TUN client hijacking the test.
+- `SECURITY.md` documents the subscription URL exposure surface: the profile is served over plain HTTP on :80 and contains the node password, so the URL is a credential; anything placed in `FILE_DIR` is served under the same token path, so backups must not go there.
+- `tests/test_content_disposition.py` locks the `Content-Disposition` header shape.
+
+### Fixed
+
+- `Content-Disposition` now emits a plain ASCII `filename="…"` alongside the RFC 5987 `filename*=UTF-8''…` form, and percent-encodes the latter. Clients that cannot parse the header invent a numeric snowflake id for the imported profile; the previous value omitted the fallback and left non-ASCII names unencoded.
+- `uninstall.sh` no longer aborts partway through. Two `[[ -f … ]] && rm …` loop bodies returned non-zero when the last candidate file was absent — the normal case — which `set -Eeuo pipefail` turned into an aborted uninstall that left UFW rules and the fail2ban jail behind.
+- `uninstall.sh` now removes the UFW rule for the port actually configured in `/etc/sing-box/conf` instead of assuming 443, and deliberately leaves SSH rules alone.
+- `--dry-run` works on a host that already has `secrets.env`. The reuse path returned without defining the template variables, so the next phase died with an unbound-variable error; dry-run now exports obvious placeholders instead of reading real secrets.
+- `phase_firewall` no longer risks locking you out. `--ssh-port N` only tells UFW which port to keep open — it does not move sshd (that is `--harden-ssh`) — so passing a port sshd was not listening on fenced off the real one at `ufw --force enable`. The ports sshd is actually bound to are now always allowed, with a warning.
+- A failing `--harden-ssh` phase is no longer swallowed by a trailing `|| true`.
+
 ## [2.0.0] — 2026-07-19
 
 > **Project renamed to `anyreality-resi-stack`** (formerly `reality-resi-stack`). GitHub automatically redirects old repository URLs, so existing `curl | bash` install commands keep working. Runtime filesystem paths (`/etc`, `/var/lib`, `/usr/local/lib`, `/var/backups`), systemd unit names, the backup script/archives, and the environment variable (now `ANYREALITY_RESI_STACK_REF`, with the legacy `REALITY_RESI_STACK_REF` still honored) are all renamed to the `anyreality-resi-stack` prefix. Upgrading a v1.x host runs a migration phase (`phase_migrate_legacy_paths`) that moves the old `reality-resi-stack` directories to the new prefix and retires the old backup unit, so existing secrets, usage state, backups, and therefore already-imported clients are preserved.

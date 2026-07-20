@@ -124,7 +124,37 @@ rules:
   - DOMAIN-SUFFIX,discordapp.net,DC
   - DOMAIN-SUFFIX,discord.media,DC
 
-  # ── Local / sensible defaults ────────────────────────────────────────
+  # ── Ad / tracker blocking ────────────────────────────────────────────
+  - GEOSITE,category-ads-all,REJECT
+
+  # ── Explicit China safety net ────────────────────────────────────────
+  # GEOSITE,CN below is a community-maintained blob: broad, but it lags and
+  # silently degrades when the geodata file fails to load. These high-traffic
+  # suffixes are listed first so the common domestic services stay DIRECT even
+  # then. DOMAIN-SUFFIX is suffix matching — subdomains are covered.
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,wechat.com,DIRECT
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+  - DOMAIN-SUFFIX,alipay.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,tmall.com,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,163.com,DIRECT
+  - DOMAIN-SUFFIX,weibo.com,DIRECT
+  - DOMAIN-SUFFIX,zhihu.com,DIRECT
+  - DOMAIN-SUFFIX,meituan.com,DIRECT
+  - DOMAIN-SUFFIX,xiaohongshu.com,DIRECT
+  - DOMAIN-SUFFIX,gov.cn,DIRECT
+  - DOMAIN-SUFFIX,edu.cn,DIRECT
+  - DOMAIN-SUFFIX,com.cn,DIRECT
+
+  # ── Community geodata, then everything else through AUTO ─────────────
   - GEOSITE,CN,DIRECT
   - GEOIP,CN,DIRECT,no-resolve
   - MATCH,AUTO

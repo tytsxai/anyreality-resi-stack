@@ -36,6 +36,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Record the inbound port before the sing-box config is deleted, so the UFW
+# cleanup below can remove the rule this installer actually created rather
+# than assuming 443.
+INBOUND_PORT="$(
+  grep -ho '"listen_port"[[:space:]]*:[[:space:]]*[0-9]\+' \
+    /etc/sing-box/conf/11_*.json 2>/dev/null |
+    grep -o '[0-9]\+' | head -1
+)"
+INBOUND_PORT="${INBOUND_PORT:-443}"
+
 step "Stopping and disabling services"
 # The reality-resi-stack-backup.* entries clean up hosts that predate the
 # rename to anyreality-resi-stack and never went through the migration phase.
@@ -52,7 +62,11 @@ for unit in sing-box.service \
   anyreality-resi-stack-backup.timer \
   reality-resi-stack-backup.service \
   reality-resi-stack-backup.timer; do
-  [[ -f "/etc/systemd/system/$unit" ]] && run rm -f "/etc/systemd/system/$unit"
+  # `[[ … ]] && rm` as the loop body makes the whole loop exit non-zero when the
+  # last unit is absent, which `set -e` then turns into an aborted uninstall.
+  if [[ -f "/etc/systemd/system/$unit" ]]; then
+    run rm -f "/etc/systemd/system/$unit"
+  fi
 done
 run systemctl daemon-reload
 
@@ -78,8 +92,12 @@ else
 fi
 
 step "Removing UFW rules and fail2ban jail"
-run ufw delete allow 443/tcp 2>/dev/null || true
+# SSH rules are deliberately left alone — removing them can lock you out.
+run ufw delete allow "${INBOUND_PORT}/tcp" 2>/dev/null || true
 run ufw delete allow 80/tcp 2>/dev/null || true
-[[ -f /etc/fail2ban/jail.d/sshd.local ]] && run rm -f /etc/fail2ban/jail.d/sshd.local
+if [[ -f /etc/fail2ban/jail.d/sshd.local ]]; then
+  run rm -f /etc/fail2ban/jail.d/sshd.local
+fi
 
 ok "Uninstall complete. sing-box binary (apt-managed) left in place."
+info "UFW rules for SSH were left in place on purpose. Review with: ufw status numbered"

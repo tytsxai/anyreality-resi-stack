@@ -337,7 +337,11 @@ phase_configure_singbox
 phase_singbox_service
 phase_firewall
 
-[[ "$HARDEN_SSH" == "1" ]] && phase_ssh_hardening || true
+# Plain `[[ … ]] && phase … || true` would swallow a real failure inside the
+# phase, so branch explicitly: if hardening runs, it must succeed.
+if [[ "$HARDEN_SSH" == "1" ]]; then
+  phase_ssh_hardening
+fi
 
 if [[ "$WITH_AGGREGATOR" == "1" ]]; then
   phase_subscription_aggregator
