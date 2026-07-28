@@ -1,6 +1,6 @@
 [project]
 name = "anyreality-resi-stack-subscription"
-version = "2.0.0"
+version = "2.1.0"
 description = "Zero-dependency Python subscription leaf and aggregator HTTP servers for the anyreality-resi-stack sing-box AnyReality (AnyTLS+Reality) / VLESS Reality deployment toolkit."
 requires-python = ">=3.10"
 readme = "README.md"
@@ -46,6 +46,8 @@ classifiers = [
 Homepage = "https://github.com/tytsxai/anyreality-resi-stack"
 Repository = "https://github.com/tytsxai/anyreality-resi-stack"
 Documentation = "https://github.com/tytsxai/anyreality-resi-stack/tree/main/docs"
+Changelog = "https://github.com/tytsxai/anyreality-resi-stack/blob/main/CHANGELOG.md"
+FAQ = "https://github.com/tytsxai/anyreality-resi-stack/blob/main/docs/en/FAQ.md"
 Issues = "https://github.com/tytsxai/anyreality-resi-stack/issues"
 
 [tool.ruff]

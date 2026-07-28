@@ -9,7 +9,13 @@ AnyReality (AnyTLS + Reality, the default protocol) or the legacy VLESS+Reality 
 3. **Health checks**: `/healthz` lets uptime monitoring probe directly.
 4. **Aggregation / HA**: in dual-node setups, the aggregator polls the leaf's `/status` and serves a unified subscription YAML — clients subscribe to a single URL.
 
-Existing tools (3x-ui, Sub-Hub, Sub-Store) either pull in a full admin panel or rely on external workers / Redis. The implementation here is **240 lines of standard-library-only Python** — auditable and dependency-free.
+Existing tools (3x-ui, Sub-Hub, Sub-Store) either pull in a full admin panel or rely on external workers / Redis. The implementation here is **standard-library-only Python** — auditable and dependency-free.
+
+Three files: `_common.py` holds everything shared (routing, environment parsing, path safety, the HTTP server, optional TLS), while `leaf_server.py` and `aggregator_server.py` keep only the two things that genuinely differ — where the usage number comes from and what `/status` reports. All three are installed into the same directory, and each server anchors `sys.path` on its own location, so `import _common` needs no packaging and no `PYTHONPATH`.
+
+**Runs unprivileged**: the subscription service runs as the system user `anyreality-sub` with only `CAP_NET_BIND_SERVICE` for binding :80. systemd reads the EnvironmentFile as root *before* dropping privileges, so `secrets.env` stays 0600 root-only — the HTTP server itself cannot read the node keys.
+
+**Optional TLS**: set `TLS_CERT_FILE` + `TLS_KEY_FILE` (or pass `--sub-tls-cert` / `--sub-tls-key` at install time) to serve the subscription over HTTPS with a TLS 1.2 floor. It needs a certificate for a real hostname — see the [operations runbook](OPERATIONS.md).
 
 > **The default served profile follows the protocol**: under the default AnyReality (`--protocol anytls-reality`) the server ships a full sing-box config `profile.json` (with a mixed inbound on `127.0.0.1:2080`); under legacy VLESS+Reality (`--protocol vless-vision`) it ships the Clash `profile.yaml`. The subscription server's own logic is unchanged (serve files by token, read NIC counters, usage card, `/healthz`, `/<token>/status`) — only the default filename and the `DEFAULT_TARGET` default change. **AnyReality requires a sing-box-family client; Clash/mihomo does not support it.**
 
