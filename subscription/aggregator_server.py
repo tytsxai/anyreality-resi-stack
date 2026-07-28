@@ -2,7 +2,7 @@
 """Reality residential subscription aggregator server.
 
 Lives on the data-center backup node (or anywhere with a stable public IP)
-and serves a unified Clash profile listing both the residential leaf and the
+and serves a unified profile listing both the residential leaf and the
 data-center node. The profile typically routes Telegram / Discord through
 this DC node (which has cleaner messenger reputation) and routes OpenAI /
 Anthropic / Netflix through the residential leaf (which earns "real home
@@ -13,6 +13,7 @@ caches the result, and falls back to the cached value if the leaf becomes
 unreachable — avoiding the "0 bytes used" jitter that would otherwise
 confuse the client's usage card.
 
+Routing, environment parsing, and the HTTP server live in ``_common.py``.
 All configuration is via environment; see
 ``templates/env/subscription-aggregator.env.example``.
 """
@@ -22,45 +23,50 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 import threading
 import time
-from contextlib import suppress
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import quote, unquote
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
+
+# _common.py ships next to this file — see the matching note in leaf_server.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import _common  # noqa: E402
+from _common import env_float, env_int, env_str  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("aggregator")
+_common.set_unit_hint("subscription-aggregator")
 
 HOST = os.environ.get("HOST", "0.0.0.0")
-PORT = int(os.environ.get("PORT", "80"))
-TOKEN = os.environ["TOKEN"].strip("/")
+PORT = env_int("PORT", "80", minimum=1, maximum=65535)
+TOKEN = env_str("TOKEN").strip("/")
 FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/anyreality-resi-stack/files"))
 DEFAULT_TARGET = os.environ.get("DEFAULT_TARGET", "profile.yaml")
 CACHE_FILE = Path(os.environ.get(
     "CACHE_FILE", "/var/lib/anyreality-resi-stack/usage-cache.json"))
-CACHE_TTL_SECONDS = float(os.environ.get("CACHE_TTL_SECONDS", "60"))
-REMOTE_POLL_INTERVAL_SECONDS = float(
-    os.environ.get("REMOTE_POLL_INTERVAL_SECONDS", CACHE_TTL_SECONDS)
+CACHE_TTL_SECONDS = env_float("CACHE_TTL_SECONDS", "60", minimum=5)
+REMOTE_POLL_INTERVAL_SECONDS = env_float(
+    "REMOTE_POLL_INTERVAL_SECONDS", str(CACHE_TTL_SECONDS), minimum=5
 )
-TOTAL_BYTES = int(os.environ.get("TOTAL_BYTES", "0"))
-FALLBACK_USED_BYTES = int(os.environ.get("FALLBACK_USED_BYTES", "0"))
-EXPIRE_TS = int(os.environ.get("EXPIRE_TS", "0"))
+TOTAL_BYTES = env_int("TOTAL_BYTES", "0", minimum=0)
+FALLBACK_USED_BYTES = env_int("FALLBACK_USED_BYTES", "0")
+EXPIRE_TS = env_int("EXPIRE_TS", "0", minimum=0)
 PROFILE_TITLE = os.environ.get("PROFILE_TITLE", "Reality-Residential-Dual")
 UPDATE_INTERVAL_HOURS = os.environ.get("UPDATE_INTERVAL_HOURS", "24")
-REMOTE_STATUS_URL = os.environ.get("REMOTE_STATUS_URL", "")
-REMOTE_TIMEOUT_SECONDS = float(os.environ.get("REMOTE_TIMEOUT_SECONDS", "3"))
-MAX_REMOTE_STATUS_BYTES = int(os.environ.get("MAX_REMOTE_STATUS_BYTES", "65536"))
-REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "10"))
+REMOTE_STATUS_URL = os.environ.get("REMOTE_STATUS_URL", "").strip()
+REMOTE_TIMEOUT_SECONDS = env_float("REMOTE_TIMEOUT_SECONDS", "3", minimum=1)
+MAX_REMOTE_STATUS_BYTES = env_int("MAX_REMOTE_STATUS_BYTES", "65536", minimum=1024)
+REQUEST_TIMEOUT_SECONDS = env_float("REQUEST_TIMEOUT_SECONDS", "10", minimum=1)
 
-CONTENT_TYPES = {
-    ".yaml": "text/yaml; charset=utf-8",
-    ".yml": "text/yaml; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".txt": "text/plain; charset=utf-8",
-}
+# urlopen() would otherwise accept file:// and read a local path into the
+# usage cache, so pin the scheme at startup rather than per request.
+if REMOTE_STATUS_URL and urlsplit(REMOTE_STATUS_URL).scheme not in {"http", "https"}:
+    _common.config_error(
+        f"REMOTE_STATUS_URL must be an http(s) URL, got: {REMOTE_STATUS_URL!r}"
+    )
 
 cache_write_lock = threading.Lock()
 
@@ -70,7 +76,7 @@ def read_remote_status() -> dict:
         return {}
     request = Request(
         REMOTE_STATUS_URL,
-        headers={"User-Agent": "AnyRealityResiStack-Aggregator/2.0"},
+        headers={"User-Agent": "AnyRealityResiStack-Aggregator/2.1"},
     )
     with urlopen(request, timeout=REMOTE_TIMEOUT_SECONDS) as response:  # noqa: S310
         body = response.read(MAX_REMOTE_STATUS_BYTES + 1)
@@ -82,22 +88,13 @@ def read_remote_status() -> dict:
 
 
 def save_usage_cache(used_bytes: int, status: dict) -> None:
-    CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "reported_used_bytes": used_bytes,
         "remote_status": status,
         "cached_at": int(time.time()),
     }
-    tmp = CACHE_FILE.with_name(
-        f".{CACHE_FILE.name}.{os.getpid()}.{threading.get_ident()}.tmp"
-    )
     with cache_write_lock:
-        try:
-            tmp.write_text(json.dumps(payload, ensure_ascii=True, sort_keys=True), encoding="utf-8")
-            tmp.replace(CACHE_FILE)
-        finally:
-            with suppress(FileNotFoundError):
-                tmp.unlink()
+        _common.atomic_write_json(CACHE_FILE, payload)
 
 
 def read_usage_cache() -> tuple[int, dict] | None:
@@ -107,25 +104,26 @@ def read_usage_cache() -> tuple[int, dict] | None:
         payload = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
         used_bytes = int(payload.get("reported_used_bytes", FALLBACK_USED_BYTES))
         return max(0, used_bytes), payload
-    except (OSError, ValueError, json.JSONDecodeError):
+    except (OSError, ValueError):
         return None
 
 
-def current_usage() -> tuple[int, dict]:
+def current_usage(force_refresh: bool = False) -> tuple[int, dict]:
     """Return (bytes_used, metadata).
 
     Resolution order: fresh cache → live poll → stale cache → fallback.
+    ``force_refresh=True`` skips the freshness check; that is what the
+    background poller uses to keep the cache warm so the request path almost
+    never has to wait on the leaf.
     """
     cached = read_usage_cache()
 
-    # If cache is still fresh, use it without hitting the network.
-    if cached is not None:
+    if not force_refresh and cached is not None:
         cached_used, cached_payload = cached
         age = time.time() - int(cached_payload.get("cached_at", 0))
         if age < CACHE_TTL_SECONDS:
             return cached_used, {"source": "cache-fresh", "age": age, "cache": cached_payload}
 
-    # Cache miss or stale → refresh from leaf.
     try:
         status = read_remote_status()
         reported = int(status.get("reported_used_bytes",
@@ -144,158 +142,36 @@ def current_usage() -> tuple[int, dict]:
         return max(0, FALLBACK_USED_BYTES), {"source": "fallback", "error": str(exc)}
 
 
-def refresh_usage_cache() -> tuple[int, dict]:
-    """Poll the leaf and refresh cache, ignoring cache freshness."""
-    try:
-        status = read_remote_status()
-        reported = int(status.get("reported_used_bytes",
-                                  status.get("used_bytes", FALLBACK_USED_BYTES)))
-        reported = max(0, reported)
-        save_usage_cache(reported, status)
-        return reported, {"source": "remote_status", "remote_status": status}
-    except Exception as exc:  # noqa: BLE001
-        cached = read_usage_cache()
-        if cached is not None:
-            cached_used, cached_payload = cached
-            return cached_used, {
-                "source": "cache-stale-fallback",
-                "error": str(exc),
-                "cache": cached_payload,
-            }
-        return max(0, FALLBACK_USED_BYTES), {"source": "fallback", "error": str(exc)}
+class AggregatorHandler(_common.BaseSubscriptionHandler):
+    server_version = "AnyRealityResiStack-Aggregator/2.1"
 
+    token = TOKEN
+    file_dir = FILE_DIR
+    default_target = DEFAULT_TARGET
+    profile_title = PROFILE_TITLE
+    update_interval_hours = UPDATE_INTERVAL_HOURS
+    total_bytes = TOTAL_BYTES
+    expire_ts = EXPIRE_TS
 
-def safe_target_path(target: str) -> Path | None:
-    target = target.strip("/")
-    if not target:
-        target = DEFAULT_TARGET
-    if target != Path(target).name:
-        return None
-    return FILE_DIR / target
-
-
-def content_type_for(path: Path) -> str:
-    return CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
-
-
-def content_disposition_for(name: str) -> str:
-    """Build an RFC 6266 / RFC 5987 Content-Disposition value.
-
-    Clients that cannot parse the header fall back to inventing a numeric id
-    for the imported profile, so emit BOTH forms: a plain ASCII ``filename=``
-    that every client understands, and a percent-encoded ``filename*=`` that
-    carries the exact (possibly non-ASCII) name for clients that do.
-    """
-    ascii_name = name.encode("ascii", "replace").decode("ascii").replace('"', "_")
-    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name, safe='')}"
-
-
-class AggregatorHandler(BaseHTTPRequestHandler):
-    server_version = "AnyRealityResiStack-Aggregator/2.0"
-
-    def do_GET(self) -> None:  # noqa: N802
-        self.handle_request(send_body=True)
-
-    def do_HEAD(self) -> None:  # noqa: N802
-        self.handle_request(send_body=False)
-
-    def handle_request(self, send_body: bool) -> None:
-        raw_path = unquote(self.path.split("?", 1)[0]).strip("/")
-        if raw_path == "healthz":
-            self.serve_health(send_body)
-            return
-
-        parts = raw_path.split("/", 1) if raw_path else []
-        if not parts or parts[0] != TOKEN:
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        target = DEFAULT_TARGET if len(parts) == 1 or not parts[1] else parts[1]
-        if target == "status":
-            self.serve_status(send_body)
-            return
-
-        file_path = safe_target_path(target)
-        if file_path is None or not file_path.is_file():
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        body = file_path.read_bytes()
+    def usage_bytes(self) -> int:
         used_bytes, _meta = current_usage()
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_type_for(file_path))
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Profile-Title", PROFILE_TITLE)
-        self.send_header("Profile-Update-Interval", UPDATE_INTERVAL_HOURS)
-        self.send_header("Content-Disposition", content_disposition_for(file_path.name))
-        self.send_header(
-            "Subscription-Userinfo",
-            f"upload=0; download={used_bytes}; total={TOTAL_BYTES}; expire={EXPIRE_TS}",
-        )
-        self.end_headers()
-        if send_body:
-            self.wfile.write(body)
+        return used_bytes
 
-    def serve_health(self, send_body: bool) -> None:
-        payload = json.dumps(
-            {"ok": True, "service": PROFILE_TITLE},
-            ensure_ascii=True,
-        ).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        if send_body:
-            self.wfile.write(payload)
-
-    def serve_status(self, send_body: bool) -> None:
+    def status_payload(self) -> dict:
         used_bytes, meta = current_usage()
-        payload = json.dumps(
-            {
-                "expire_ts": EXPIRE_TS,
-                "poll_interval_seconds": REMOTE_POLL_INTERVAL_SECONDS,
-                "profile_title": PROFILE_TITLE,
-                "reported_used_bytes": used_bytes,
-                "total_bytes": TOTAL_BYTES,
-                **meta,
-            },
-            ensure_ascii=True,
-        ).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        if send_body:
-            self.wfile.write(payload)
-
-    def log_message(self, fmt: str, *args) -> None:  # noqa: A003
-        log.info("%s - %s", self.address_string(), fmt % args)
-
-
-class TimeoutThreadingHTTPServer(ThreadingHTTPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-    request_queue_size = 64
-
-    def get_request(self):  # type: ignore[no-untyped-def]
-        sock, addr = super().get_request()
-        sock.settimeout(REQUEST_TIMEOUT_SECONDS)
-        return sock, addr
-
-
-def main() -> None:
-    start_remote_polling()
-    server = TimeoutThreadingHTTPServer((HOST, PORT), AggregatorHandler)
-    log.info("listening on %s:%s", HOST, PORT)
-    server.serve_forever()
+        return {
+            "expire_ts": EXPIRE_TS,
+            "poll_interval_seconds": REMOTE_POLL_INTERVAL_SECONDS,
+            "profile_title": PROFILE_TITLE,
+            "reported_used_bytes": used_bytes,
+            "total_bytes": TOTAL_BYTES,
+            **meta,
+        }
 
 
 def remote_poll_loop() -> None:
     while True:
-        _used_bytes, meta = refresh_usage_cache()
+        _used_bytes, meta = current_usage(force_refresh=True)
         if meta.get("source") != "remote_status":
             log.warning(
                 "remote status poll used %s: %s",
@@ -308,6 +184,27 @@ def remote_poll_loop() -> None:
 def start_remote_polling() -> None:
     thread = threading.Thread(target=remote_poll_loop, name="remote-status-poll", daemon=True)
     thread.start()
+
+
+def startup_preflight() -> None:
+    """Warn loudly about conditions that make the service look 'up' but useless."""
+    default_profile = FILE_DIR / DEFAULT_TARGET
+    if not default_profile.is_file():
+        log.warning(
+            "DEFAULT_TARGET %s does not exist — the subscription path will answer 404",
+            default_profile,
+        )
+    if not REMOTE_STATUS_URL:
+        log.warning(
+            "REMOTE_STATUS_URL is empty — usage will always report FALLBACK_USED_BYTES=%s",
+            FALLBACK_USED_BYTES,
+        )
+
+
+def main() -> None:
+    startup_preflight()
+    start_remote_polling()
+    _common.serve(HOST, PORT, AggregatorHandler, REQUEST_TIMEOUT_SECONDS)
 
 
 if __name__ == "__main__":
