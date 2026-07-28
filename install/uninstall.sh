@@ -74,6 +74,9 @@ step "Removing config and runtime"
 run rm -rf /etc/sing-box/conf /etc/sing-box/logs
 run rm -rf /usr/local/lib/anyreality-resi-stack /usr/local/lib/reality-resi-stack
 run rm -f /usr/local/sbin/backup-anyreality-resi-stack.sh /usr/local/sbin/backup-reality-resi-stack.sh
+run rm -f /usr/local/sbin/anyreality-resi-stack-healthcheck \
+  /usr/local/sbin/anyreality-resi-stack-rotate-sub-token
+run rm -f /etc/logrotate.d/sing-box
 run rm -rf /var/lib/anyreality-resi-stack/usage-state.json /var/lib/anyreality-resi-stack/usage-cache.json \
   /var/lib/reality-resi-stack/usage-state.json /var/lib/reality-resi-stack/usage-cache.json
 
@@ -89,6 +92,14 @@ if [[ "$KEEP_BACKUPS" == "0" ]]; then
   run rm -rf /var/backups/anyreality-resi-stack /var/backups/reality-resi-stack
 else
   info "Keeping /var/backups/anyreality-resi-stack (pass --purge-backups to remove)"
+fi
+
+step "Removing the subscription service account"
+# Only after the units are gone, and only if nothing else adopted the user.
+if id -u anyreality-sub >/dev/null 2>&1; then
+  run userdel anyreality-sub 2>/dev/null || warn "could not remove user anyreality-sub"
+else
+  info "Service account anyreality-sub not present"
 fi
 
 step "Removing UFW rules and fail2ban jail"

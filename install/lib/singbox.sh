@@ -286,6 +286,41 @@ PY
   fi
 }
 
+# ── Log rotation ─────────────────────────────────────────────────────────
+# 00_log.json writes to /etc/sing-box/logs/box.log with no size bound. At
+# level=error that file is normally tiny, but a persistent failure (dead
+# upstream DNS, a probing flood, a bad config after an upgrade) turns it into
+# the fastest way to fill a small VPS disk — at which point sing-box, journald
+# and the backup timer all fail together. Cap it.
+#
+# copytruncate rather than a postrotate HUP: sing-box holds the log fd open and
+# `kill -HUP` triggers a full config reload, which is a heavier and riskier
+# operation than truncating a file we already keep small.
+phase_logrotate() {
+  step "Installing logrotate policy for sing-box"
+  write_file /etc/logrotate.d/sing-box 0644 <<'EOF'
+/etc/sing-box/logs/*.log {
+  daily
+  rotate 7
+  maxsize 20M
+  missingok
+  notifempty
+  compress
+  delaycompress
+  copytruncate
+  su root root
+  create 0640 root root
+}
+EOF
+  if [[ "$DRY_RUN" != "1" ]]; then
+    if logrotate -d /etc/logrotate.d/sing-box >/dev/null 2>&1; then
+      ok "logrotate policy validates"
+    else
+      warn "logrotate -d rejected /etc/logrotate.d/sing-box — review it manually"
+    fi
+  fi
+}
+
 # ── systemd unit ─────────────────────────────────────────────────────────
 phase_singbox_service() {
   step "Installing sing-box systemd unit"
@@ -340,10 +375,17 @@ phase_verify() {
   fi
 
   if [[ "${WITH_SUBSCRIPTION:-0}" == "1" || "${WITH_AGGREGATOR:-0}" == "1" ]]; then
-    if curl -fsS "http://127.0.0.1/healthz" >/dev/null 2>&1; then
+    # With TLS on, the certificate is issued for a hostname while we probe the
+    # loopback address, so -k is expected here — this checks liveness, not trust.
+    local health_url="http://127.0.0.1/healthz" curl_opts=(-fsS --max-time 5)
+    if [[ -n "${SUB_TLS_CERT:-}" ]]; then
+      health_url="https://127.0.0.1/healthz"
+      curl_opts+=(-k)
+    fi
+    if curl "${curl_opts[@]}" "$health_url" >/dev/null 2>&1; then
       ok "Subscription /healthz responds"
     else
-      fail "Subscription /healthz does not respond"
+      fail "Subscription /healthz does not respond ($health_url)"
       fails=$((fails + 1))
     fi
   fi

@@ -84,7 +84,7 @@ phase_system_init() {
   run env DEBIAN_FRONTEND=noninteractive apt-get update -qq
   run env DEBIAN_FRONTEND=noninteractive apt-get -y -qq install \
     curl wget ca-certificates gnupg lsb-release unzip jq uuid-runtime \
-    ufw fail2ban chrony python3 iproute2
+    ufw fail2ban chrony python3 iproute2 logrotate
 
   if [[ -n "${TIMEZONE:-}" ]]; then
     run timedatectl set-timezone "$TIMEZONE"
@@ -181,6 +181,22 @@ EOF
   svc_enable_now fail2ban
   svc_restart fail2ban
   ok "fail2ban configured"
+}
+
+# ── Operator tooling ─────────────────────────────────────────────────────
+# Install the read-only health check and the token-rotation helper onto the
+# box itself. Both are needed exactly when the repo checkout is not at hand:
+# during an incident, over a phone SSH session, or from cron.
+phase_ops_tools() {
+  step "Installing operator tools"
+
+  run install -m 0755 "$REPO_ROOT/scripts/healthcheck.sh" \
+    /usr/local/sbin/anyreality-resi-stack-healthcheck
+  run install -m 0755 "$REPO_ROOT/scripts/rotate-sub-token.sh" \
+    /usr/local/sbin/anyreality-resi-stack-rotate-sub-token
+
+  ok "anyreality-resi-stack-healthcheck / -rotate-sub-token installed to /usr/local/sbin"
+  info "Cron alerting (mails only on failure): */10 * * * * /usr/local/sbin/anyreality-resi-stack-healthcheck --quiet"
 }
 
 # ── Optional: SSH hardening ──────────────────────────────────────────────

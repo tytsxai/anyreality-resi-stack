@@ -12,6 +12,69 @@ INSTALL_LIB_DIR=/usr/local/lib/anyreality-resi-stack
 ENV_DIR=/etc/anyreality-resi-stack
 PROFILE_DIR=/etc/anyreality-resi-stack/files
 STATE_DIR=/var/lib/anyreality-resi-stack
+SUB_USER=anyreality-sub
+
+# ── Unprivileged service account ─────────────────────────────────────────
+# The subscription server is the only component listening on a public port
+# with an attack surface written in this repo. It has no reason to run as
+# root: systemd reads the EnvironmentFile before dropping privileges, so the
+# secrets file can stay 0600 root-only, and CAP_NET_BIND_SERVICE covers :80.
+# Net effect: a flaw in the HTTP server no longer reads secrets.env.
+ensure_sub_user() {
+  if id -u "$SUB_USER" >/dev/null 2>&1; then
+    info "Service account $SUB_USER already exists"
+    return 0
+  fi
+  if [[ "$DRY_RUN" == "1" ]]; then
+    info "[dry] would create system user $SUB_USER (no login, no home)"
+    return 0
+  fi
+  useradd --system --no-create-home --shell /usr/sbin/nologin "$SUB_USER" ||
+    die "Could not create service account $SUB_USER"
+  ok "Created service account $SUB_USER"
+}
+
+# Lay out the directories the service touches, with the narrowest ownership
+# that still works: state is writable by the service, profiles are read-only
+# to it, and secrets stay root-only inside the same (traversable) parent.
+prepare_sub_paths() {
+  run mkdir -p "$INSTALL_LIB_DIR" "$ENV_DIR" "$PROFILE_DIR" "$STATE_DIR"
+  run chmod 0755 "$ENV_DIR" "$PROFILE_DIR"
+  run chown -R "$SUB_USER:$SUB_USER" "$STATE_DIR"
+  run chmod 0750 "$STATE_DIR"
+
+  # _common.py holds the routing/config layer both servers import. It must land
+  # next to the server script — the servers anchor sys.path on their own
+  # directory, so no PYTHONPATH or packaging is involved.
+  run cp "$REPO_ROOT/subscription/_common.py" "$INSTALL_LIB_DIR/_common.py"
+  run chmod 0644 "$INSTALL_LIB_DIR/_common.py"
+}
+
+# Emit the TLS_* lines for a subscription EnvironmentFile. Empty when TLS was
+# not requested, so the servers keep their plain-HTTP default.
+sub_tls_env_lines() {
+  if [[ -n "${SUB_TLS_CERT:-}" ]]; then
+    printf 'TLS_CERT_FILE=%s\n' "$SUB_TLS_CERT"
+    printf 'TLS_KEY_FILE=%s\n' "$SUB_TLS_KEY"
+  fi
+}
+
+# TLS material is root-owned by whatever issued it (certbot, a manual copy), so
+# the dropped-privilege service needs explicit read access to it.
+grant_tls_read_access() {
+  [[ -n "${SUB_TLS_CERT:-}" ]] || return 0
+  [[ "$DRY_RUN" == "1" ]] && {
+    info "[dry] would grant $SUB_USER read access to $SUB_TLS_CERT / $SUB_TLS_KEY"
+    return 0
+  }
+  local path
+  for path in "$SUB_TLS_CERT" "$SUB_TLS_KEY"; do
+    [[ -f "$path" ]] || die "TLS file not found: $path"
+    chgrp "$SUB_USER" "$path" || warn "could not chgrp $path to $SUB_USER"
+    chmod g+r "$path" || warn "could not grant group read on $path"
+  done
+  ok "Granted $SUB_USER read access to the TLS certificate and key"
+}
 
 prepare_aggregator_template_vars() {
   local protocol="${PROTOCOL:-anytls-reality}"
@@ -76,7 +139,9 @@ phase_subscription_leaf() {
     default_target="profile.json"
   fi
 
-  run mkdir -p "$INSTALL_LIB_DIR" "$ENV_DIR" "$PROFILE_DIR" "$STATE_DIR"
+  ensure_sub_user
+  prepare_sub_paths
+  grant_tls_read_access
 
   run cp "$REPO_ROOT/subscription/leaf_server.py" \
     "$INSTALL_LIB_DIR/leaf_server.py"
@@ -98,6 +163,7 @@ UPDATE_INTERVAL_HOURS=${UPDATE_INTERVAL_HOURS:-24}
 REQUEST_TIMEOUT_SECONDS=${REQUEST_TIMEOUT_SECONDS:-10}
 FILE_DIR=$PROFILE_DIR
 DEFAULT_TARGET=$default_target
+$(sub_tls_env_lines)
 EOF
 
   # Serve one canonical profile as the default; drop any stale sibling so
@@ -133,7 +199,9 @@ phase_subscription_aggregator() {
     default_target="profile.json"
   fi
 
-  run mkdir -p "$INSTALL_LIB_DIR" "$ENV_DIR" "$PROFILE_DIR" "$STATE_DIR"
+  ensure_sub_user
+  prepare_sub_paths
+  grant_tls_read_access
 
   run cp "$REPO_ROOT/subscription/aggregator_server.py" \
     "$INSTALL_LIB_DIR/aggregator_server.py"
@@ -156,6 +224,7 @@ CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-60}
 REMOTE_POLL_INTERVAL_SECONDS=${REMOTE_POLL_INTERVAL_SECONDS:-${CACHE_TTL_SECONDS:-60}}
 FILE_DIR=$PROFILE_DIR
 DEFAULT_TARGET=$default_target
+$(sub_tls_env_lines)
 EOF
 
   # Render the dual-node profile with smart routing (TG → DC, OpenAI → Resi).
