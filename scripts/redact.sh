@@ -46,17 +46,6 @@ FORBIDDEN_GLOBS=(
   "*.7z"
 )
 
-# Paths to skip during scanning.
-SKIP_DIRS=(
-  ".git"
-  "node_modules"
-  "_site"
-  ".jekyll-cache"
-  "__pycache__"
-  ".ruff_cache"
-  "vendor"
-)
-
 # Files exempt from shape-based scanning (themselves contain regexes about secrets).
 EXEMPT_FILES=(
   "scripts/redact.sh"
@@ -137,15 +126,9 @@ is_exempt_file() {
 }
 
 # Build find args for skip dirs.
-build_find_skip() {
-  local args=() d
-  for d in "${SKIP_DIRS[@]}"; do
-    args+=(-name "$d" -prune -o)
-  done
-  printf '%s\n' "${args[@]}"
-}
-
 # Collect files (portable, NUL-safe).
+# The -prune list below is the single source of truth for skipped directories;
+# keep it inline — building find args dynamically is not worth the quoting risk.
 FILES=()
 for root in "${SCAN_ROOTS[@]}"; do
   if [[ -f "$root" ]]; then
