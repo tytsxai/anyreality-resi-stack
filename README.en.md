@@ -11,7 +11,7 @@
 [![AnyReality](https://img.shields.io/badge/protocol-AnyTLS%2BReality-green.svg)](docs/en/DEPLOYMENT.md)
 [![Release](https://img.shields.io/github/v/release/tytsxai/anyreality-resi-stack)](https://github.com/tytsxai/anyreality-resi-stack/releases)
 
-[简体中文 README](README.md) · [Beginner guide](docs/en/BEGINNER_GUIDE.md) · [Deployment](docs/en/DEPLOYMENT.md) · [Routing rules](docs/en/ROUTING.md) · [Comparison](docs/en/COMPARISON.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
+[简体中文 README](README.md) · [Beginner guide](docs/en/BEGINNER_GUIDE.md) · [Usage examples](docs/en/EXAMPLES.md) · [FAQ](docs/en/FAQ.md) · [Deployment](docs/en/DEPLOYMENT.md) · [Routing rules](docs/en/ROUTING.md) · [Comparison](docs/en/COMPARISON.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
 
 > This is the English edition. The [Simplified Chinese README](README.md) is the authoritative
 > document and is updated first; every guide under `docs/en/` mirrors its `docs/zh-CN/` counterpart.
@@ -244,6 +244,10 @@ maintenance" scenario lives in [comparison](docs/en/COMPARISON.md).
 
 ## FAQ
 
+The highest-frequency questions are below. The full set — 40+ answers covering installer flags,
+subscription security, usage accounting, routing behaviour, dual-node, uninstall, and license
+boundaries — lives in [docs/en/FAQ.md](docs/en/FAQ.md).
+
 **Telegram file uploads stall on my residential VPS — "sending…" spins forever. What now?**
 Telegram soft-throttles residential subnets that have historically hosted bots. Enable **dual-node
 mode** and route `geosite:telegram` out through the data-center node; the problem goes away.
@@ -287,23 +291,15 @@ retry HTTP/3 and only fall back to TCP after a timeout — which users experienc
 few seconds first". Blocking `udp:443` forces the fallback to happen immediately. Delete the rule if
 you do not want that behaviour; see [routing rules](docs/en/ROUTING.md).
 
-**Can I re-run the installer? Will it wipe my UUID and Reality keys?**
-The script is **idempotent**: re-running changes neither the UUID nor the Reality keypair. A daily
-systemd timer also backs up the sing-box configuration.
-
-**Why require Ubuntu 22.04+ / Debian 12+? What about CentOS 7 or Alpine?**
-Not supported. BBR, journald limits, the sing-box apt repository, and GPG fingerprint verification
-all assume a modern systemd + apt system. This is a deliberate limit: a smaller compatibility matrix
-in exchange for stability.
-
 **How is this different from 3x-ui / x-ui / XHTTP-Installer?**
 Those are built for "cheap VPS, bypass censorship" (multi-user, panel, hide the exit IP). This
 project is built on the opposite premise — **your residential IP is an asset** — so it defaults to a
 single UUID, does not hide the IP, and diverts only the few services hostile to residential subnets.
 
-**GPL-3.0 — can I use this inside a closed-source company project?**
-No. You would need to release under GPL-3.0, or negotiate commercial licensing with the sing-box
-community/authors.
+The rest — installer idempotency, why only Ubuntu 22.04+ / Debian 12+, pinning versions and
+unattended installs, recovering a lost subscription URL, usage-accounting semantics, dual-node
+deployment, uninstall and rollback, GPL-3.0 boundaries — is answered in the
+[full FAQ](docs/en/FAQ.md).
 
 ## Documentation
 
@@ -311,6 +307,8 @@ community/authors.
 | --- | --- |
 | Documentation index | [docs/README.md](docs/README.md) |
 | Beginner guide | [docs/en/BEGINNER_GUIDE.md](docs/en/BEGINNER_GUIDE.md) |
+| FAQ | [docs/en/FAQ.md](docs/en/FAQ.md) |
+| Usage examples | [docs/en/EXAMPLES.md](docs/en/EXAMPLES.md) |
 | Deployment | [docs/en/DEPLOYMENT.md](docs/en/DEPLOYMENT.md) |
 | Subscription server design | [docs/en/SUBSCRIPTION.md](docs/en/SUBSCRIPTION.md) |
 | Dual-node + smart routing | [docs/en/DUAL-NODE.md](docs/en/DUAL-NODE.md) |

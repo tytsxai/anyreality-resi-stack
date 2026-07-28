@@ -13,7 +13,7 @@
 [![Release](https://img.shields.io/github/v/release/tytsxai/anyreality-resi-stack)](https://github.com/tytsxai/anyreality-resi-stack/releases)
 [![GitHub stars](https://img.shields.io/github/stars/tytsxai/anyreality-resi-stack?style=social)](https://github.com/tytsxai/anyreality-resi-stack/stargazers)
 
-[English README](README.en.md) · [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
+[English README](README.en.md) · [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [命令示例](docs/zh-CN/EXAMPLES.md) · [常见问题 FAQ](docs/zh-CN/FAQ.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
 
 > **Search keywords / 搜索关键词**: AnyReality, AnyTLS Reality, sing-box AnyTLS Reality installer, AnyReality 一键脚本, AnyReality 住宅 IP, residential IP VLESS, VLESS Reality residential proxy, sing-box residential installer, VLESS+Reality 一键脚本, OpenAI 住宅 IP 代理, ChatGPT 住宅 IP 出口, Telegram 住宅 IP 上传慢, Discord 住宅 IP 降权, Clash 域名分流, 双节点智能分流, alternative to 3x-ui for residential VPS
 
@@ -261,12 +261,16 @@ Client downloads a *single* subscription URL from the aggregator. That URL retur
 | 中文 | English |
 |---|---|
 | [文档索引](docs/README.md) | [Documentation index](docs/README.md) |
+| [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) | [Beginner guide](docs/en/BEGINNER_GUIDE.md) |
+| [常见问题 FAQ](docs/zh-CN/FAQ.md) | [FAQ](docs/en/FAQ.md) |
+| [命令示例](docs/zh-CN/EXAMPLES.md) | [Usage examples](docs/en/EXAMPLES.md) |
 | [部署](docs/zh-CN/DEPLOYMENT.md) | [Deployment](docs/en/DEPLOYMENT.md) |
 | [订阅服务设计](docs/zh-CN/SUBSCRIPTION.md) | [Subscription server design](docs/en/SUBSCRIPTION.md) |
 | [双节点 + 智能分流](docs/zh-CN/DUAL-NODE.md) | [Dual-node + smart routing](docs/en/DUAL-NODE.md) |
 | [分流规则](docs/zh-CN/ROUTING.md) | [Client routing rules](docs/en/ROUTING.md) |
 | [故障排查](docs/zh-CN/TROUBLESHOOTING.md) | [Troubleshooting](docs/en/TROUBLESHOOTING.md) |
 | [客户端导入](docs/zh-CN/CLIENTS.md) | [Client import](docs/en/CLIENTS.md) |
+| [同类评分对比](docs/zh-CN/COMPARISON.md) | [Comparison](docs/en/COMPARISON.md) |
 
 For AI search engines and retrieval tools, see [llms.txt](llms.txt). It summarizes the repository purpose, boundaries, docs map, and useful search phrases in a compact machine-readable format.
 
@@ -291,6 +295,8 @@ For AI search engines and retrieval tools, see [llms.txt](llms.txt). It summariz
 
 ## ❓ FAQ
 
+下面是最高频的几个问题。更完整的问答（安装参数、订阅安全、流量统计、分流行为、双节点、卸载、许可边界等 40+ 条）见 [常见问题 FAQ](docs/zh-CN/FAQ.md) / [FAQ (English)](docs/en/FAQ.md)。
+
 **Q: 我的 Telegram 在住宅 VPS 上文件上传卡死、"正在发送..." 一直转,怎么办?**
 Telegram 会对**历史上跑过 bot 的住宅 IP 段**做软降权。打开本仓库的**双节点模式**,把 `geosite:telegram` 通过数据中心备用节点出去,问题立刻解决。
 
@@ -312,17 +318,10 @@ Telegram 会对**历史上跑过 bot 的住宅 IP 段**做软降权。打开本�
 **Q: 默认配置为什么把 UDP 443 (QUIC / HTTP3) 拦掉了?**
 AnyTLS + Reality 是纯 TCP 协议,QUIC 流量没法走节点。不拦的话浏览器会一直尝试 HTTP/3、超时后才回落 TCP,表现就是"打开网页前先卡几秒"。拦掉 `udp:443` 是让它**立刻**回落 TCP。不需要这个行为就删掉那条规则,见 [分流规则](docs/zh-CN/ROUTING.md#想改默认行为)。
 
-**Q: 安装脚本能重复运行吗?会不会把 UUID 和 Reality 密钥洗掉?**
-脚本是**幂等的**,重跑既不会改 UUID 也不会重新生成 Reality 密钥。每天 systemd-timer 还会自动备份 sing-box 配置。
-
-**Q: 为什么强制 Ubuntu 22.04+ / Debian 12+?CentOS 7 / Alpine 行不行?**
-不行 —— BBR、journald 限额、sing-box apt 源、GPG 指纹校验都是基于现代 systemd + apt 的。这是有意限制,降低兼容性矩阵换稳定性。
-
 **Q: 这工具和 3x-ui / x-ui / XHTTP-Installer 有什么区别?**
 那些是为「便宜 VPS 翻墙」设计的(多用户、面板、隐藏出口 IP)。本项目是为**住宅 IP VPS 是资产**这个完全相反的前提设计的 —— 默认单 UUID、不藏 IP、按域名把对住宅 IP 不友好的少数服务旁路掉。
 
-**Q: GPL-3.0 协议,我能用在闭源公司项目里吗?**
-不能,需要开源到 GPL-3.0,或者和 sing-box 社区/作者协商商业许可。
+其余问题 —— 安装脚本幂等性、为什么只支持 Ubuntu 22.04+ / Debian 12+、如何固定版本与无人值守安装、订阅 URL 找回、流量统计口径、双节点部署、卸载与回滚、GPL-3.0 商用边界 —— 见 [完整 FAQ](docs/zh-CN/FAQ.md)。
 
 ## 🤝 Contributing | 贡献
 

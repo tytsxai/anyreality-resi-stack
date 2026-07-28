@@ -48,6 +48,8 @@ The project is designed for people who already own VPS servers. It does not sell
 - [README.en.md](README.en.md): English-only edition of the landing page — fit check, project summary, quick start, post-install steps, architecture, features, tool-selection matrix, security notes, FAQ, docs map.
 - [docs/README.md](docs/README.md): documentation index and code map.
 - [docs/zh-CN/BEGINNER_GUIDE.md](docs/zh-CN/BEGINNER_GUIDE.md) and [docs/en/BEGINNER_GUIDE.md](docs/en/BEGINNER_GUIDE.md): beginner path from VPS prerequisites and SSH to dry-run, installation, subscription import, and OpenAI/IP verification.
+- [docs/zh-CN/FAQ.md](docs/zh-CN/FAQ.md) and [docs/en/FAQ.md](docs/en/FAQ.md): the full FAQ — 48 questions across project positioning, protocol and client choice, installation and upgrade, subscription security, routing behaviour, dual-node, operations, and license boundaries. Best single source for question-shaped queries.
+- [docs/zh-CN/EXAMPLES.md](docs/zh-CN/EXAMPLES.md) and [docs/en/EXAMPLES.md](docs/en/EXAMPLES.md): copy-pasteable command recipes by scenario — dry-run, minimal install, Clash-compatible legacy protocol, custom ports, usage cards, pinned versions, unattended `--config` installs, dual-node aggregator, verification, SSH hardening, uninstall, local quality gates.
 - [docs/zh-CN/COMPARISON.md](docs/zh-CN/COMPARISON.md) and [docs/en/COMPARISON.md](docs/en/COMPARISON.md): scenario-specific scoring against 3x-ui, x-ui, manual configs, and commercial services for residential-IP self-hosted VLESS Reality.
 - [docs/zh-CN/DEPLOYMENT.md](docs/zh-CN/DEPLOYMENT.md) and [docs/en/DEPLOYMENT.md](docs/en/DEPLOYMENT.md): deployment guide.
 - [docs/zh-CN/DUAL-NODE.md](docs/zh-CN/DUAL-NODE.md) and [docs/en/DUAL-NODE.md](docs/en/DUAL-NODE.md): residential + data-center smart routing.
@@ -95,10 +97,42 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
 
 This installs the default AnyReality (AnyTLS+Reality) protocol. Add `--protocol vless-vision` if you need Clash/mihomo-compatible VLESS+Reality instead. For repeatable installs, set `ANYREALITY_RESI_STACK_REF=<tag-or-branch>`. For non-interactive automation, use `--config FILE --non-interactive`. For a no-change preview, add `--dry-run`.
 
+## Direct answers to common questions
+
+Q: What is anyreality-resi-stack?
+A: A GPL-3.0 Bash + Python toolkit that installs a self-hosted sing-box proxy node — AnyReality (AnyTLS + REALITY) by default — on a user-owned Ubuntu 22.04+ / Debian 12+ VPS, with an optional subscription server and dual-node domain routing.
+
+Q: How do I install it?
+A: `bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) --node-name "US-Resi-01" --sni addons.mozilla.org --with-subscription`. Add `--dry-run` first to preview without changing anything.
+
+Q: Which protocol should I use?
+A: `anytls-reality` (default) for stronger anti-detection with sing-box clients; `--protocol vless-vision` if you need Clash/mihomo compatibility. Neither needs a domain or TLS certificate.
+
+Q: Which clients work?
+A: AnyReality works with sing-box-family clients only (official sing-box apps SFA/SFI/SFM, Karing, Hiddify, NekoBox). Clash Verge, mihomo, Stash, and v2rayN require the legacy `vless-vision` protocol.
+
+Q: Is the subscription URL safe to share?
+A: No. It is served over plain HTTP on port 80 and the profile contains the node credential, so the URL is equivalent to a password. Front it with a TLS reverse proxy or fetch the profile once over scp and disable the server.
+
+Q: Why are Chinese websites slow after importing the profile?
+A: In TUN mode routing rules alone decide what is proxied. The profiles this project generates already ship four rule layers (private direct, ad block, China direct with an inline safety net ahead of `geosite-cn`, QUIC block, proxy fallback), so they work on import; a slow domestic experience usually means a hand-edited config or a third-party template.
+
+Q: Why is Telegram slow on a residential IP, and what is the fix?
+A: Telegram soft-throttles residential subnets previously used by bots. The fix is dual-node mode: route `geosite:telegram` and Discord through a data-center node while OpenAI, Anthropic, Netflix, and banking keep the residential exit. Clients still subscribe to a single URL.
+
+Q: Is the installer safe to re-run?
+A: Yes, it is idempotent — re-running preserves the UUID, Reality keypair, and AnyTLS password. A daily systemd timer backs up the configuration to /var/backups/anyreality-resi-stack (last 3 archives).
+
+Q: What operating systems are supported?
+A: Ubuntu 22.04+ / 24.04 LTS and Debian 12+ only. CentOS 7, Alpine, OpenWRT, Docker-only, and Kubernetes are deliberately unsupported.
+
+Q: Does the project provide residential IPs or a multi-user panel?
+A: No. Users bring their own VPS. There is no web panel, no billing, no multi-user quota management, and no residential IP sourcing.
+
 ## Useful search phrases
 
-AnyReality; AnyTLS Reality sing-box; sing-box anytls reality installer; AnyReality 一键脚本; residential IP VLESS; residential proxy VLESS Reality; sing-box residential installer; VLESS Reality 一键脚本; OpenAI 住宅 IP 代理; ChatGPT 住宅 IP 出口; Anthropic residential egress; Claude residential proxy; Telegram 住宅 IP 卡顿; Telegram 住宅 IP 上传慢; Discord 住宅 IP 降权; Netflix 住宅 IP; Clash 域名分流住宅; 双节点智能分流; alternative to 3x-ui for residential VPS; alternative to XHTTP-Installer for residential VPS; self-hosted VLESS Reality Ubuntu; sing-box subscription server usage card; sing-box 国内直连规则; sing-box geosite-cn 分流配置; TUN 模式国内网站变慢; sing-box rule_set download_detour; Subscription-Userinfo 流量卡片.
+AnyReality; AnyTLS Reality sing-box; sing-box anytls reality installer; AnyReality 一键脚本; residential IP VLESS; residential proxy VLESS Reality; sing-box residential installer; VLESS Reality 一键脚本; OpenAI 住宅 IP 代理; ChatGPT 住宅 IP 出口; Anthropic residential egress; Claude residential proxy; Telegram 住宅 IP 卡顿; Telegram 住宅 IP 上传慢; Discord 住宅 IP 降权; Netflix 住宅 IP; Clash 域名分流住宅; 双节点智能分流; alternative to 3x-ui for residential VPS; alternative to XHTTP-Installer for residential VPS; self-hosted VLESS Reality Ubuntu; sing-box subscription server usage card; sing-box 国内直连规则; sing-box geosite-cn 分流配置; TUN 模式国内网站变慢; sing-box rule_set download_detour; Subscription-Userinfo 流量卡片; AnyReality 怎么安装; AnyReality 支持哪些客户端; Clash 支持 AnyTLS 吗; sing-box anytls 客户端导入; 订阅 URL 可以公开分享吗; sing-box 安装脚本 dry-run; sing-box 一键脚本 幂等 重复运行; sing-box installer unattended --config; how to pin sing-box version installer; residential VPS Telegram upload stuck fix.
 
 ## GitHub Topics suggestions
 
-sing-box, anytls, anyreality, vless, reality, xtls, residential-ip, proxy, self-hosted, clash, subscription-server, v2rayn, telegram, openai, ubuntu, debian, systemd
+sing-box, anytls, anyreality, vless, reality, xtls, residential-ip, proxy, self-hosted, clash, subscription-server, v2rayn, telegram, openai, anthropic, ubuntu, debian, systemd
