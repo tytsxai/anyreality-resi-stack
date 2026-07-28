@@ -77,7 +77,7 @@ class AggregatorCacheTest(unittest.TestCase):
         self.set_time(120)
         self.aggregator.read_remote_status = lambda: {"reported_used_bytes": 88}
 
-        used, meta = self.aggregator.refresh_usage_cache()
+        used, meta = self.aggregator.current_usage(force_refresh=True)
 
         self.assertEqual(used, 88)
         self.assertEqual(meta["source"], "remote_status")
@@ -112,8 +112,9 @@ class AggregatorCacheTest(unittest.TestCase):
         self.assertEqual(meta["source"], "fallback")
 
     def test_http_server_limits_abandoned_clients(self) -> None:
-        self.assertTrue(self.aggregator.TimeoutThreadingHTTPServer.daemon_threads)
-        self.assertEqual(self.aggregator.TimeoutThreadingHTTPServer.request_queue_size, 64)
+        server = self.aggregator._common.SubscriptionHTTPServer
+        self.assertTrue(server.daemon_threads)
+        self.assertEqual(server.request_queue_size, 64)
         self.assertGreater(self.aggregator.REQUEST_TIMEOUT_SECONDS, 0)
 
     def test_remote_status_response_size_is_capped(self) -> None:
