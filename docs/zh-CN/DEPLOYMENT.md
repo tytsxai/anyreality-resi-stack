@@ -59,8 +59,12 @@
 | `WITH_SUBSCRIPTION` | `1` | 是否安装订阅服务（推荐） |
 | `WITH_AGGREGATOR` | `0` | 是否安装聚合模式（双节点才用） |
 | `HARDEN_SSH` | `0` | 是否启用 SSH key-only + 改端口（默认关，避免锁服） |
+| `SERVER_IP` | `203.0.113.10` | 写进客户端配置的服务器地址；留空则自动探测，探测失败时必须手动填 |
+| `SINGBOX_VERSION` | 空 | 固定 sing-box 的 apt 包版本；留空取仓库最新稳定版 |
+| `USAGE_OFFSET_BYTES` | `0` | 流量基线偏移（字节），用于补齐安装之前已经用掉的量，可为负 |
+| `COUNT_CURRENT_BOOT_ON_INIT` | `true` | 首次建立统计状态时，是否把当前 boot 已累计的字节算进去 |
 
-下面所有命令都假设你已经 `export` 了这些变量。
+下面所有命令都假设你已经 `export` 了这些变量。命令行参数与变量一一对应（`--node-name` ↔ `NODE_NAME` …），完整参数清单可在服务器上跑 `bash install/install.sh --help`；按场景整理的命令配方见 [EXAMPLES.md](EXAMPLES.md)。
 
 ---
 
@@ -238,6 +242,8 @@ bash /opt/anyreality-resi-stack/install/uninstall.sh --purge-all
 ## 8. 下一步
 
 - 第一次部署、想按步骤照做 → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
+- 按场景查命令配方 → [EXAMPLES.md](EXAMPLES.md)
+- 常见问题 → [FAQ.md](FAQ.md)
 - 客户端怎么导入 → [CLIENTS.md](CLIENTS.md)
 - 订阅服务的设计与端点契约 → [SUBSCRIPTION.md](SUBSCRIPTION.md)
 - 启用双节点 + 智能分流（解决 TG 软风控等） → [DUAL-NODE.md](DUAL-NODE.md)

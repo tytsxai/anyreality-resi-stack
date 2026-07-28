@@ -59,6 +59,12 @@ Decide these before running. The installer prompts for missing values, but bundl
 | `WITH_SUBSCRIPTION` | `1` | Install the subscription server (recommended) |
 | `WITH_AGGREGATOR` | `0` | Install in aggregator mode (dual-node only) |
 | `HARDEN_SSH` | `0` | Apply SSH key-only + port change (off by default, to avoid lockouts) |
+| `SERVER_IP` | `203.0.113.10` | Server address written into the client profile; auto-detected when empty, and required manually if detection fails |
+| `SINGBOX_VERSION` | empty | Pin the sing-box apt package version; empty means the repo's latest stable |
+| `USAGE_OFFSET_BYTES` | `0` | Accounting baseline offset in bytes — backfills usage from before the install; may be negative |
+| `COUNT_CURRENT_BOOT_ON_INIT` | `true` | On first state creation, count bytes already accumulated in the current boot |
+
+Every variable has a matching CLI flag (`--node-name` ↔ `NODE_NAME`, …); run `bash install/install.sh --help` on the server for the full list, and see [EXAMPLES.md](EXAMPLES.md) for scenario-based command recipes.
 
 ---
 
@@ -240,6 +246,8 @@ bash /opt/anyreality-resi-stack/install/uninstall.sh --purge-all
 ## 8. Next
 
 - First deployment, step by step → [BEGINNER_GUIDE.md](BEGINNER_GUIDE.md)
+- Command recipes by scenario → [EXAMPLES.md](EXAMPLES.md)
+- Common questions → [FAQ.md](FAQ.md)
 - Importing into clients → [CLIENTS.md](CLIENTS.md)
 - Subscription server design → [SUBSCRIPTION.md](SUBSCRIPTION.md)
 - Enabling dual-node + smart routing (fixes Telegram soft-throttle, etc.) → [DUAL-NODE.md](DUAL-NODE.md)

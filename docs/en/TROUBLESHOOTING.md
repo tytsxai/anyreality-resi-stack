@@ -198,7 +198,9 @@ systemctl start sing-box
 sing-box check -C /etc/sing-box/conf
 ```
 
-⚠️ Backups **do not** include `/var/lib/anyreality-resi-stack/usage-state.json` or `usage-cache.json` (runtime state), so after a restore the counter restarts. Archives include `/etc/anyreality-resi-stack/`, which contains secrets and tokens; do not share them publicly. Apply a `USAGE_OFFSET_BYTES` after restore (see "Counter doesn't match provider dashboard" above).
+⚠️ Backups **do not** include `/var/lib/anyreality-resi-stack/usage-state.json` or `usage-cache.json` (runtime state), so after a restore the counter restarts. Archives include `/etc/anyreality-resi-stack/`, which contains secrets and tokens; do not share them publicly. Apply a `USAGE_OFFSET_BYTES` after restore (see "Counter doesn't match provider dashboard" above). sing-box logs are excluded too.
+
+For the full backup verification, restore drill, and rollback procedure see the [operations runbook](OPERATIONS.md).
 
 ---
 

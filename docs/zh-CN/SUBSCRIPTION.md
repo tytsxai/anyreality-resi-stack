@@ -9,7 +9,13 @@ AnyReality（AnyTLS + Reality，默认协议）或遗留的 VLESS+Reality 协议
 3. **健康检查**：`/healthz` 让 uptime 监控可以直接探活。
 4. **聚合 / 高可用**：双节点场景下，aggregator 节点轮询 leaf 的 `/status`，输出统一订阅 YAML —— 客户端只需要订阅一个 URL。
 
-现成方案（3x-ui、Sub-Hub、Sub-Store）要么把面板和后台塞一起、要么依赖外部 worker/Redis。这个仓库的实现是 **240 行 Python 标准库零依赖**，行为可读、可审计。
+现成方案（3x-ui、Sub-Hub、Sub-Store）要么把面板和后台塞一起、要么依赖外部 worker/Redis。这个仓库的实现是 **Python 标准库零依赖**，行为可读、可审计。
+
+三个文件：`_common.py` 装公共部分（路由、环境变量解析、路径安全、HTTP 服务、可选 TLS），`leaf_server.py` 和 `aggregator_server.py` 各自只保留真正不同的两件事——用量数字从哪来、`/status` 输出什么。安装时三个文件放在同一目录，服务把 `sys.path` 锚在自己所在目录，所以 `import _common` 不需要打包、不需要 `PYTHONPATH`。
+
+**运行身份**：订阅服务以非特权系统用户 `anyreality-sub` 运行，只保留 `CAP_NET_BIND_SERVICE`（绑 :80）。systemd 在降权**之前**以 root 读 EnvironmentFile，所以 `secrets.env` 保持 0600 root 独占——HTTP 服务本身读不到节点密钥。
+
+**可选 TLS**：设置 `TLS_CERT_FILE` + `TLS_KEY_FILE`（或安装时用 `--sub-tls-cert` / `--sub-tls-key`）即可让订阅走 HTTPS，最低 TLS 1.2。需要真实域名的证书，详见[运维手册](OPERATIONS.md)。
 
 > **默认服务的档案文件跟随协议**：默认协议 AnyReality（`--protocol anytls-reality`）下发的是完整 sing-box 配置 `profile.json`（含 mixed 入站 `127.0.0.1:2080`）；遗留协议 VLESS+Reality（`--protocol vless-vision`）下发的是 Clash 的 `profile.yaml`。订阅服务器本身的逻辑不变（按 token 提供文件、读网卡计数、流量卡片、`/healthz`、`/<token>/status`），变的只是默认档案文件名与 `DEFAULT_TARGET` 的默认值。**AnyReality 只能用 sing-box 系客户端，Clash/mihomo 不支持。**
 

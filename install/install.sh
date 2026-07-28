@@ -18,6 +18,8 @@
 #   --usage-poll-interval N     Background usage sample interval seconds (default: 60)
 #   --with-subscription         Install the subscription leaf server on :80
 #   --with-aggregator URL       Install aggregator instead, polling URL for /status
+#   --sub-tls-cert FILE         Serve the subscription over HTTPS with this certificate
+#   --sub-tls-key FILE          Private key for --sub-tls-cert (both or neither)
 #   --harden-ssh                Apply SSH key-only + port change (read warnings!)
 #   --singbox-version X.Y.Z     Pin sing-box version (default: apt latest stable)
 #   --dry-run                   Print every action, change nothing
@@ -96,6 +98,8 @@ REQUEST_TIMEOUT_SECONDS=10
 WITH_SUBSCRIPTION=0
 WITH_AGGREGATOR=0
 REMOTE_STATUS_URL=""
+SUB_TLS_CERT=""
+SUB_TLS_KEY=""
 HARDEN_SSH=0
 SINGBOX_VERSION=""
 DRY_RUN=0
@@ -106,7 +110,15 @@ CONFIG_FILE=""
 print_help() { sed -n '/^# anyreality-resi-stack installer\./,/^set -Eeuo/{ /^set -Eeuo/d; s/^# \{0,1\}//; p; }' "$0"; }
 
 # ── Argument parsing ─────────────────────────────────────────────────────
+# Flags that consume the next argv entry. Without this guard `--sni` as the last
+# argument dies with a bare `$2: unbound variable` from `set -u`, which tells the
+# operator nothing about which flag was malformed.
+VALUE_FLAGS=" --node-name --protocol --sni --inbound-port --ssh-port --timezone --interface --total-bytes --billing-cycle-day --usage-poll-interval --with-aggregator --sub-tls-cert --sub-tls-key --singbox-version --config "
+
 while [[ $# -gt 0 ]]; do
+  if [[ "$VALUE_FLAGS" == *" $1 "* && $# -lt 2 ]]; then
+    die "$1 requires a value (try --help)"
+  fi
   case "$1" in
     --node-name)
       NODE_NAME="$2"
@@ -156,6 +168,14 @@ while [[ $# -gt 0 ]]; do
     --with-aggregator)
       WITH_AGGREGATOR=1
       REMOTE_STATUS_URL="$2"
+      shift 2
+      ;;
+    --sub-tls-cert)
+      SUB_TLS_CERT="$2"
+      shift 2
+      ;;
+    --sub-tls-key)
+      SUB_TLS_KEY="$2"
       shift 2
       ;;
     --harden-ssh)
@@ -295,6 +315,19 @@ validate_config() {
     [[ "$REMOTE_STATUS_URL" =~ ^https?://[^[:space:]]+$ ]] ||
       die "REMOTE_STATUS_URL must be an http(s) URL without spaces"
   fi
+  # TLS for the subscription endpoint is opt-in and needs a real certificate;
+  # half a pair is always a mistake, so refuse it rather than silently serving
+  # plain HTTP when the operator believed they had enabled HTTPS.
+  if [[ -n "$SUB_TLS_CERT" || -n "$SUB_TLS_KEY" ]]; then
+    [[ -n "$SUB_TLS_CERT" && -n "$SUB_TLS_KEY" ]] ||
+      die "--sub-tls-cert and --sub-tls-key must be given together"
+    [[ "$WITH_SUBSCRIPTION" == "1" || "$WITH_AGGREGATOR" == "1" ]] ||
+      die "--sub-tls-cert requires --with-subscription or --with-aggregator"
+    if [[ "$DRY_RUN" != "1" ]]; then
+      [[ -f "$SUB_TLS_CERT" ]] || die "--sub-tls-cert file not found: $SUB_TLS_CERT"
+      [[ -f "$SUB_TLS_KEY" ]] || die "--sub-tls-key file not found: $SUB_TLS_KEY"
+    fi
+  fi
 }
 
 # ── Interactive fill-in for required ─────────────────────────────────────
@@ -313,9 +346,31 @@ if [[ -z "$INTERFACE" ]]; then
 fi
 
 # Pick a sensible server IP for the rendered client profile (auto-detect).
-SERVER_IP="${SERVER_IP:-$(curl -fsS https://api.ipify.org 2>/dev/null || echo "")}"
+# A single lookup endpoint is a single point of install failure: ipify is
+# blocked or rate-limited often enough that installs on fresh hosts fail with
+# only a vague warning. Try a few independent providers before giving up.
+detect_public_ip() {
+  local url ip
+  for url in \
+    https://api.ipify.org \
+    https://ifconfig.me/ip \
+    https://icanhazip.com \
+    https://ipv4.icanhazip.com; do
+    ip="$(curl -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]')" || ip=""
+    if [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+      printf '%s' "$ip"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ -z "${SERVER_IP:-}" ]]; then
+  SERVER_IP="$(detect_public_ip || true)"
+fi
 if [[ -z "$SERVER_IP" ]]; then
-  warn "Could not auto-detect public IP. Set SERVER_IP=… or --config to render client profile."
+  warn "Could not auto-detect public IP from any provider."
+  warn "Set SERVER_IP=… in --config (or export it) so the client profile renders correctly."
 fi
 
 validate_config
@@ -325,7 +380,7 @@ export SERVER_IP NODE_NAME PROTOCOL SNI INBOUND_PORT SSH_PORT TIMEZONE INTERFACE
   BILLING_CYCLE_DAY USAGE_POLL_INTERVAL_SECONDS COUNT_CURRENT_BOOT_ON_INIT \
   UPDATE_INTERVAL_HOURS CACHE_TTL_SECONDS REMOTE_POLL_INTERVAL_SECONDS \
   REMOTE_TIMEOUT_SECONDS MAX_REMOTE_STATUS_BYTES REQUEST_TIMEOUT_SECONDS REMOTE_STATUS_URL \
-  HARDEN_SSH SINGBOX_VERSION
+  HARDEN_SSH SINGBOX_VERSION SUB_TLS_CERT SUB_TLS_KEY
 
 # ── Run phases ───────────────────────────────────────────────────────────
 phase_preflight
@@ -334,6 +389,7 @@ phase_install_singbox
 phase_migrate_legacy_paths
 phase_generate_keys
 phase_configure_singbox
+phase_logrotate
 phase_singbox_service
 phase_firewall
 
@@ -349,6 +405,7 @@ elif [[ "$WITH_SUBSCRIPTION" == "1" ]]; then
   phase_subscription_leaf
 fi
 
+phase_ops_tools
 phase_backup
 phase_verify
 
@@ -378,7 +435,16 @@ if [[ "$DRY_RUN" != "1" ]]; then
   fi
 
   if [[ "$WITH_SUBSCRIPTION" == "1" || "$WITH_AGGREGATOR" == "1" ]]; then
-    printf "\n%sSubscription URL:%s http://%s/%s\n" "$C_CYAN" "$C_RESET" "${SERVER_IP:-<host>}" "$SUB_TOKEN"
+    if [[ -n "$SUB_TLS_CERT" ]]; then
+      printf "\n%sSubscription URL:%s https://<your-cert-hostname>/%s\n" \
+        "$C_CYAN" "$C_RESET" "$SUB_TOKEN"
+      printf "%s  TLS is on — use the hostname the certificate was issued for, not the IP.%s\n" \
+        "$C_GRAY" "$C_RESET"
+    else
+      printf "\n%sSubscription URL:%s http://%s/%s\n" "$C_CYAN" "$C_RESET" "${SERVER_IP:-<host>}" "$SUB_TOKEN"
+      printf "%s  Served over plain HTTP — treat this URL as a password. See docs OPERATIONS.md.%s\n" \
+        "$C_GRAY" "$C_RESET"
+    fi
   fi
 
   printf "\n%sSecrets stored at /etc/anyreality-resi-stack/secrets.env (mode 600).%s\n" "$C_GRAY" "$C_RESET"

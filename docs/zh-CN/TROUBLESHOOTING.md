@@ -199,7 +199,9 @@ systemctl start sing-box
 sing-box check -C /etc/sing-box/conf
 ```
 
-⚠️ 备份归档**不含** `var/lib/reality-resi-stack/usage-state.json` 或 `usage-cache.json`（运行时数据），所以恢复后流量计数会从恢复时刻重新起算。归档会包含 `/etc/anyreality-resi-stack/`，里面有密钥和 token，不能公开传播。恢复后可以用上面"流量统计漂移"小节的命令补一个 offset。
+⚠️ 备份归档**不含** `/var/lib/anyreality-resi-stack/usage-state.json`、`usage-cache.json`（运行时数据）和 sing-box 日志，所以恢复后流量计数会从恢复时刻重新起算。归档会包含 `/etc/anyreality-resi-stack/`，里面有密钥和 token，不能公开传播。恢复后可以用上面"流量统计漂移"小节的命令补一个 offset。
+
+完整的备份校验、恢复演练和回滚流程见[运维手册](OPERATIONS.md)。
 
 ---
 

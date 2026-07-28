@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AGGREGATOR_PATH = REPO_ROOT / "subscription" / "aggregator_server.py"
 
@@ -77,7 +76,7 @@ class AggregatorCacheTest(unittest.TestCase):
         self.set_time(120)
         self.aggregator.read_remote_status = lambda: {"reported_used_bytes": 88}
 
-        used, meta = self.aggregator.refresh_usage_cache()
+        used, meta = self.aggregator.current_usage(force_refresh=True)
 
         self.assertEqual(used, 88)
         self.assertEqual(meta["source"], "remote_status")
@@ -112,8 +111,9 @@ class AggregatorCacheTest(unittest.TestCase):
         self.assertEqual(meta["source"], "fallback")
 
     def test_http_server_limits_abandoned_clients(self) -> None:
-        self.assertTrue(self.aggregator.TimeoutThreadingHTTPServer.daemon_threads)
-        self.assertEqual(self.aggregator.TimeoutThreadingHTTPServer.request_queue_size, 64)
+        server = self.aggregator._common.SubscriptionHTTPServer
+        self.assertTrue(server.daemon_threads)
+        self.assertEqual(server.request_queue_size, 64)
         self.assertGreater(self.aggregator.REQUEST_TIMEOUT_SECONDS, 0)
 
     def test_remote_status_response_size_is_capped(self) -> None:
@@ -129,9 +129,11 @@ class AggregatorCacheTest(unittest.TestCase):
 
         self.aggregator.REMOTE_STATUS_URL = "http://example.test/status"
         self.aggregator.MAX_REMOTE_STATUS_BYTES = 4
-        with patch.object(self.aggregator, "urlopen", return_value=OversizedResponse()):
-            with self.assertRaisesRegex(ValueError, "MAX_REMOTE_STATUS_BYTES=4"):
-                self.aggregator.read_remote_status()
+        with (
+            patch.object(self.aggregator, "urlopen", return_value=OversizedResponse()),
+            self.assertRaisesRegex(ValueError, "MAX_REMOTE_STATUS_BYTES=4"),
+        ):
+            self.aggregator.read_remote_status()
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ Serves a per-token subscription endpoint with three responsibilities:
 3.  Expose ``/healthz`` (liveness) and ``/<TOKEN>/status`` (machine-readable
     usage summary) for monitoring and for aggregator nodes to poll.
 
+Routing, environment parsing, and the HTTP server live in ``_common.py``.
 All configuration is via environment; see ``templates/env/subscription-leaf.env.example``.
 """
 
@@ -19,46 +20,41 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 import threading
 import time as time_module
-from contextlib import suppress
 from datetime import datetime, time
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import quote, unquote
+
+# _common.py ships next to this file. Anchoring sys.path on the script's own
+# directory keeps the import working regardless of cwd, symlinks, or how the
+# module is loaded (systemd, a test harness, or a manual run).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import _common  # noqa: E402
+from _common import env_bool, env_float, env_int, env_str  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("leaf")
+_common.set_unit_hint("subscription-leaf")
 
 HOST = os.environ.get("HOST", "0.0.0.0")
-PORT = int(os.environ.get("PORT", "80"))
-TOKEN = os.environ["TOKEN"].strip("/")
-INTERFACE = os.environ.get("INTERFACE", "eth0")
+PORT = env_int("PORT", "80", minimum=1, maximum=65535)
+TOKEN = env_str("TOKEN").strip("/")
+INTERFACE = env_str("INTERFACE", "eth0")
 STATE_FILE = Path(os.environ.get(
     "STATE_FILE", "/var/lib/anyreality-resi-stack/usage-state.json"))
-TOTAL_BYTES = int(os.environ.get("TOTAL_BYTES", "0"))
-USAGE_OFFSET_BYTES = int(os.environ.get("USAGE_OFFSET_BYTES", "0"))
-EXPIRE_TS = int(os.environ.get("EXPIRE_TS", "0"))
-BILLING_CYCLE_DAY = int(os.environ.get("BILLING_CYCLE_DAY", "1"))
-USAGE_POLL_INTERVAL_SECONDS = int(os.environ.get("USAGE_POLL_INTERVAL_SECONDS", "60"))
-COUNT_CURRENT_BOOT_ON_INIT = os.environ.get("COUNT_CURRENT_BOOT_ON_INIT", "true").lower() in {
-    "1",
-    "true",
-    "yes",
-}
+TOTAL_BYTES = env_int("TOTAL_BYTES", "0", minimum=0)
+USAGE_OFFSET_BYTES = env_int("USAGE_OFFSET_BYTES", "0")
+EXPIRE_TS = env_int("EXPIRE_TS", "0", minimum=0)
+BILLING_CYCLE_DAY = env_int("BILLING_CYCLE_DAY", "1", minimum=1, maximum=28)
+USAGE_POLL_INTERVAL_SECONDS = env_int("USAGE_POLL_INTERVAL_SECONDS", "60", minimum=5)
+COUNT_CURRENT_BOOT_ON_INIT = env_bool("COUNT_CURRENT_BOOT_ON_INIT", "true")
 PROFILE_TITLE = os.environ.get("PROFILE_TITLE", "Reality-Residential")
 UPDATE_INTERVAL_HOURS = os.environ.get("UPDATE_INTERVAL_HOURS", "24")
 FILE_DIR = Path(os.environ.get("FILE_DIR", "/etc/anyreality-resi-stack/files"))
 DEFAULT_TARGET = os.environ.get("DEFAULT_TARGET", "profile.yaml")
-REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "10"))
-
-CONTENT_TYPES = {
-    ".yaml": "text/yaml; charset=utf-8",
-    ".yml": "text/yaml; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".txt": "text/plain; charset=utf-8",
-}
+REQUEST_TIMEOUT_SECONDS = env_float("REQUEST_TIMEOUT_SECONDS", "10", minimum=1)
 
 state_lock = threading.Lock()
 
@@ -129,25 +125,34 @@ def load_state() -> dict:
         return {}
     try:
         return json.loads(STATE_FILE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError) as exc:
         log.warning("load_state(%s) failed: %s — reinitializing accounting state", STATE_FILE, exc)
         return {}
 
 
 def save_state(state: dict) -> None:
-    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = STATE_FILE.with_name(
-        f".{STATE_FILE.name}.{os.getpid()}.{threading.get_ident()}.tmp"
-    )
-    try:
-        tmp.write_text(json.dumps(state, ensure_ascii=True, sort_keys=True), encoding="utf-8")
-        tmp.replace(STATE_FILE)
-    finally:
-        with suppress(FileNotFoundError):
-            tmp.unlink()
+    _common.atomic_write_json(STATE_FILE, state)
 
 
 def update_usage_state() -> int:
+    """Accounting wrapper that never raises.
+
+    Serving the profile file is this server's primary job; the usage counter is
+    secondary. A full disk or a read-only ``/var/lib`` must therefore degrade to
+    "counter stops moving", not to a 500 that breaks every client's
+    subscription refresh.
+    """
+    try:
+        return _compute_usage_state()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("usage accounting failed: %s — serving last known counter", exc)
+        try:
+            return int(load_state().get("used_bytes", 0))
+        except Exception:  # noqa: BLE001
+            return 0
+
+
+def _compute_usage_state() -> int:
     """Maintain a monotonically increasing billing-period counter despite reboots.
 
     If the kernel stats are unavailable this round, return the last persisted
@@ -208,152 +213,69 @@ def reported_used_bytes(used_bytes: int) -> int:
     return max(0, USAGE_OFFSET_BYTES + used_bytes)
 
 
-def safe_target_path(target: str) -> Path | None:
-    """Resolve ``target`` inside ``FILE_DIR`` while rejecting traversal."""
-    target = target.strip("/")
-    if not target:
-        target = DEFAULT_TARGET
-    # Reject anything with a path separator — only direct filenames allowed.
-    if target != Path(target).name:
-        return None
-    return FILE_DIR / target
+class SubscriptionHandler(_common.BaseSubscriptionHandler):
+    server_version = "AnyRealityResiStack-Leaf/2.1"
 
+    token = TOKEN
+    file_dir = FILE_DIR
+    default_target = DEFAULT_TARGET
+    profile_title = PROFILE_TITLE
+    update_interval_hours = UPDATE_INTERVAL_HOURS
+    total_bytes = TOTAL_BYTES
+    expire_ts = EXPIRE_TS
 
-def content_type_for(path: Path) -> str:
-    return CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
+    def usage_bytes(self) -> int:
+        return reported_used_bytes(update_usage_state())
 
-
-def content_disposition_for(name: str) -> str:
-    """Build an RFC 6266 / RFC 5987 Content-Disposition value.
-
-    Clients that cannot parse the header fall back to inventing a numeric id
-    for the imported profile, so emit BOTH forms: a plain ASCII ``filename=``
-    that every client understands, and a percent-encoded ``filename*=`` that
-    carries the exact (possibly non-ASCII) name for clients that do.
-    """
-    ascii_name = name.encode("ascii", "replace").decode("ascii").replace('"', "_")
-    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name, safe='')}"
-
-
-class SubscriptionHandler(BaseHTTPRequestHandler):
-    server_version = "AnyRealityResiStack-Leaf/2.0"
-
-    def do_GET(self) -> None:  # noqa: N802
-        self.handle_request(send_body=True)
-
-    def do_HEAD(self) -> None:  # noqa: N802
-        self.handle_request(send_body=False)
-
-    def handle_request(self, send_body: bool) -> None:
-        raw_path = unquote(self.path.split("?", 1)[0]).strip("/")
-        if raw_path == "healthz":
-            payload = json.dumps({"ok": True, "service": PROFILE_TITLE}).encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            if send_body:
-                self.wfile.write(payload)
-            return
-
-        parts = raw_path.split("/", 1) if raw_path else []
-        if not parts or parts[0] != TOKEN:
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        target = DEFAULT_TARGET if len(parts) == 1 or not parts[1] else parts[1]
-        if target == "status":
-            self.serve_status(send_body)
-            return
-
-        file_path = safe_target_path(target)
-        if file_path is None or not file_path.is_file():
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        body = file_path.read_bytes()
+    def status_payload(self) -> dict:
         used_bytes = update_usage_state()
-        reported_bytes = reported_used_bytes(used_bytes)
-
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_type_for(file_path))
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Profile-Title", PROFILE_TITLE)
-        self.send_header("Profile-Update-Interval", UPDATE_INTERVAL_HOURS)
-        self.send_header("Content-Disposition", content_disposition_for(file_path.name))
-        self.send_header(
-            "Subscription-Userinfo",
-            f"upload=0; download={reported_bytes}; total={TOTAL_BYTES}; expire={EXPIRE_TS}",
-        )
-        self.end_headers()
-        if send_body:
-            self.wfile.write(body)
-
-    def serve_status(self, send_body: bool) -> None:
-        used_bytes = update_usage_state()
-        reported_bytes = reported_used_bytes(used_bytes)
-        payload = json.dumps(
-            {
-                "billing_cycle_day": BILLING_CYCLE_DAY,
-                "billing_reset_ts": next_billing_reset_ts(),
-                "counter_used_bytes": used_bytes,
-                "count_current_boot_on_init": COUNT_CURRENT_BOOT_ON_INIT,
-                "expire_ts": EXPIRE_TS,
-                "interface": INTERFACE,
-                "period": current_period_key(),
-                "poll_interval_seconds": USAGE_POLL_INTERVAL_SECONDS,
-                "profile_title": PROFILE_TITLE,
-                "reported_used_bytes": reported_bytes,
-                "total_bytes": TOTAL_BYTES,
-                "usage_offset_bytes": USAGE_OFFSET_BYTES,
-                "used_bytes": used_bytes,
-            },
-            ensure_ascii=True,
-        ).encode("utf-8")
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        if send_body:
-            self.wfile.write(payload)
-
-    def log_message(self, fmt: str, *args) -> None:  # noqa: A003
-        log.info("%s - %s", self.address_string(), fmt % args)
-
-
-class TimeoutThreadingHTTPServer(ThreadingHTTPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-    request_queue_size = 64
-
-    def get_request(self):  # type: ignore[no-untyped-def]
-        sock, addr = super().get_request()
-        sock.settimeout(REQUEST_TIMEOUT_SECONDS)
-        return sock, addr
-
-
-def main() -> None:
-    start_usage_polling()
-    server = TimeoutThreadingHTTPServer((HOST, PORT), SubscriptionHandler)
-    log.info("listening on %s:%s", HOST, PORT)
-    server.serve_forever()
+        return {
+            "billing_cycle_day": BILLING_CYCLE_DAY,
+            "billing_reset_ts": next_billing_reset_ts(),
+            "counter_used_bytes": used_bytes,
+            "count_current_boot_on_init": COUNT_CURRENT_BOOT_ON_INIT,
+            "expire_ts": EXPIRE_TS,
+            "interface": INTERFACE,
+            "period": current_period_key(),
+            "poll_interval_seconds": USAGE_POLL_INTERVAL_SECONDS,
+            "profile_title": PROFILE_TITLE,
+            "reported_used_bytes": reported_used_bytes(used_bytes),
+            "total_bytes": TOTAL_BYTES,
+            "usage_offset_bytes": USAGE_OFFSET_BYTES,
+            "used_bytes": used_bytes,
+        }
 
 
 def usage_poll_loop() -> None:
     while True:
-        try:
-            update_usage_state()
-        except Exception as exc:  # noqa: BLE001
-            log.warning("usage poll failed: %s", exc)
+        update_usage_state()
         time_module.sleep(max(5, USAGE_POLL_INTERVAL_SECONDS))
 
 
 def start_usage_polling() -> None:
     thread = threading.Thread(target=usage_poll_loop, name="usage-poll", daemon=True)
     thread.start()
+
+
+def startup_preflight() -> None:
+    """Warn loudly about conditions that make the service look 'up' but useless."""
+    default_profile = FILE_DIR / DEFAULT_TARGET
+    if not default_profile.is_file():
+        log.warning(
+            "DEFAULT_TARGET %s does not exist — the subscription path will answer 404",
+            default_profile,
+        )
+    if not (Path("/sys/class/net") / INTERFACE).exists():
+        log.warning(
+            "INTERFACE %s not found under /sys/class/net — traffic accounting will stay at 0",
+            INTERFACE,
+        )
+
+
+def main() -> None:
+    startup_preflight()
+    start_usage_polling()
+    _common.serve(HOST, PORT, SubscriptionHandler, REQUEST_TIMEOUT_SECONDS)
 
 
 if __name__ == "__main__":

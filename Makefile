@@ -37,7 +37,7 @@ shfmt:
 	@if [[ -n "$(SH_FILES)" ]]; then shfmt -d -i 2 -ci $(SH_FILES); fi
 
 ruff:
-	@command -v ruff >/dev/null || { echo "ruff not installed; pip install ruff"; exit 1; }
+	@command -v ruff >/dev/null || { echo "ruff not installed; pip install ruff==0.15.22 (version pinned in .github/workflows/lint.yml)"; exit 1; }
 	@ruff check $(PY_FILES)
 
 yamllint:

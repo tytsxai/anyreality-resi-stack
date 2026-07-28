@@ -40,6 +40,8 @@
 ## 中文文档
 
 - [新手完整教程](zh-CN/BEGINNER_GUIDE.md): 从买 VPS 前检查、SSH、`--dry-run`、正式安装、保存订阅 URL、客户端导入到 OpenAI/IP 验证。
+- [常见问题 FAQ](zh-CN/FAQ.md): 项目定位、协议选择、安装部署、订阅安全、分流行为、双节点、运维与许可边界的集中问答。
+- [命令示例](zh-CN/EXAMPLES.md): 按场景整理的安装与运维命令配方（dry-run、Clash 兼容、自定义端口、流量卡片、固定版本、无人值守、双节点、卸载）。
 - [同类评分对比](zh-CN/COMPARISON.md): 面向住宅 IP 自托管 AnyReality / VLESS Reality 场景，对比 3x-ui、x-ui、手写配置和商业服务。
 - [部署指南](zh-CN/DEPLOYMENT.md): 从空白 VPS 到 AnyReality 节点上线（含 `--protocol vless-vision` 遗留选项），包括一行安装、`--config`、验证清单和卸载。
 - [双节点 + 智能分流](zh-CN/DUAL-NODE.md): 住宅节点与数据中心节点如何协作，为什么 Telegram / Discord 适合走 DC，OpenAI / Anthropic / Netflix 适合走住宅出口。
@@ -47,11 +49,14 @@
 - [客户端导入](zh-CN/CLIENTS.md): v2rayN、Clash Verge、Stash、Shadowrocket、v2rayNG、NekoBox、sing-box 客户端导入方式。
 - [分流规则](zh-CN/ROUTING.md): 客户端配置的四层路由（内网直连 / 广告拦截 / 国内直连 / 兜底走节点）、为什么内联安全网要排在 `geosite-cn` 之前、怎么增删国内平台、怎么验证某域名确实直连。
 - [故障排查](zh-CN/TROUBLESHOOTING.md): 连接失败、Reality 握手、订阅卡片、流量统计漂移、Telegram 上传慢、fail2ban 锁定等问题。
+- [运维手册](zh-CN/OPERATIONS.md): 上线前检查清单、健康检查与告警接法、日志与磁盘边界、备份验证/异地备份/恢复演练、回滚路径、订阅 token 轮换与泄露处置、给订阅端点开 HTTPS。
 
 ## English docs
 
 - [English README](../README.en.md): Full English edition of the landing page — 30-second fit check, project summary, quick start, post-install steps, architecture, features, tool-selection matrix, security boundaries, and FAQ.
 - [Beginner guide](en/BEGINNER_GUIDE.md): VPS prerequisites, SSH, `--dry-run`, install, saving the subscription URL, client import, and OpenAI/IP verification.
+- [FAQ](en/FAQ.md): Consolidated answers on positioning, protocol choice, installation, subscription security, routing behaviour, dual-node, operations, and license boundaries.
+- [Usage examples](en/EXAMPLES.md): Install and operations command recipes by scenario (dry-run, Clash compatibility, custom ports, usage cards, pinned versions, unattended installs, dual-node, uninstall).
 - [Comparison](en/COMPARISON.md): Scores 3x-ui, x-ui, manual configs, and commercial services for the residential-IP self-hosted AnyReality / VLESS Reality scenario.
 - [Deployment](en/DEPLOYMENT.md): Blank VPS to running AnyReality node (with the legacy `--protocol vless-vision` option), including one-line install, config files, verification, and uninstall.
 - [Dual-node smart routing](en/DUAL-NODE.md): Residential node + data-center fallback, with domain rules for OpenAI/Anthropic/Netflix vs Telegram/Discord.
@@ -59,6 +64,7 @@
 - [Client import](en/CLIENTS.md): v2rayN, Clash Verge, Stash, Shadowrocket, v2rayNG, NekoBox, and sing-box client setup.
 - [Client routing rules](en/ROUTING.md): the four-layer route stack (private direct / ad block / China direct / proxy fallback), why the inline safety net precedes `geosite-cn`, how to add domains, and how to verify a domain really goes direct.
 - [Troubleshooting](en/TROUBLESHOOTING.md): Client failures, Reality handshakes, usage-card issues, traffic-counter drift, Telegram upload stalls, and fail2ban lockouts.
+- [Operations runbook](en/OPERATIONS.md): Pre-launch checklist, health checks and alerting, log/disk bounds, backup verification/off-box copies/restore drills, rollback paths, subscription token rotation, and enabling HTTPS for the subscription endpoint.
 
 ## 代码入口 | Code map
 
@@ -66,8 +72,11 @@
 - `install/lib/system.sh`: OS preflight, base packages, BBR, swap, journald, UFW, fail2ban, optional SSH hardening.
 - `install/lib/singbox.sh`: Sagernet apt setup, GPG fingerprint verification, Reality key generation, sing-box config rendering, service verification.
 - `install/lib/subscription.sh`: installs leaf or aggregator subscription services and renders the client profile — `profile.json` (sing-box) for AnyReality, `profile.yaml` (Clash) for legacy VLESS-Vision.
+- `subscription/_common.py`: shared routing, environment parsing, path safety, and the HTTP server (with optional TLS) that both subscription servers import.
 - `subscription/leaf_server.py`: zero-dependency Python server for subscription files, usage accounting, `/healthz`, and `/status`.
 - `subscription/aggregator_server.py`: zero-dependency Python server that polls leaf status, caches usage, and serves dual-node subscriptions.
+- `scripts/healthcheck.sh`: read-only health check installed to `/usr/local/sbin/anyreality-resi-stack-healthcheck`; exits non-zero when the node is degraded, so cron can alert on it.
+- `scripts/rotate-sub-token.sh`: rotates the subscription token in place with automatic rollback; installed to `/usr/local/sbin/anyreality-resi-stack-rotate-sub-token`.
 - `templates/`: source templates for sing-box JSON, Clash YAML, systemd units, and environment files.
 - `examples/`: generated placeholder examples from `scripts/make-example.sh`; never deploy these values directly.
 

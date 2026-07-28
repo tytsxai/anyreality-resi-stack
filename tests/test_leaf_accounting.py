@@ -8,7 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEAF_PATH = REPO_ROOT / "subscription" / "leaf_server.py"
 
@@ -130,8 +129,9 @@ class LeafAccountingTest(unittest.TestCase):
         )
 
     def test_http_server_limits_abandoned_clients(self) -> None:
-        self.assertTrue(self.leaf.TimeoutThreadingHTTPServer.daemon_threads)
-        self.assertEqual(self.leaf.TimeoutThreadingHTTPServer.request_queue_size, 64)
+        server = self.leaf._common.SubscriptionHTTPServer
+        self.assertTrue(server.daemon_threads)
+        self.assertEqual(server.request_queue_size, 64)
         self.assertGreater(self.leaf.REQUEST_TIMEOUT_SECONDS, 0)
 
     def test_counter_sample_uses_state_lock(self) -> None:
@@ -159,6 +159,33 @@ class LeafAccountingTest(unittest.TestCase):
         self.leaf.read_boot_id = read_boot_id
 
         self.assertEqual(self.leaf.update_usage_state(), 100)
+
+    def test_save_failure_keeps_serving(self) -> None:
+        """A full or read-only /var/lib must not turn every profile fetch into a 500.
+
+        Serving the profile is the primary job; the usage counter is secondary,
+        so a persistence failure degrades to "counter stops moving".
+        """
+        self.set_counter(5_000)
+        self.assertEqual(self.leaf.update_usage_state(), 5_000)
+
+        def exploding_save(_state: dict) -> None:
+            raise OSError(28, "No space left on device")
+
+        self.leaf.save_state = exploding_save
+        self.set_counter(9_000)
+
+        # Returns the last persisted value instead of propagating the OSError.
+        self.assertEqual(self.leaf.update_usage_state(), 5_000)
+
+    def test_load_failure_returns_zero(self) -> None:
+        def exploding_load() -> dict:
+            raise OSError("state unreadable")
+
+        self.leaf.load_state = exploding_load
+        self.set_counter(1_234)
+
+        self.assertEqual(self.leaf.update_usage_state(), 0)
 
 
 if __name__ == "__main__":
