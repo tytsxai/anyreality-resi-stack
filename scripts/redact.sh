@@ -165,6 +165,19 @@ UUID_RE='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]
 B64URL43_RE='[A-Za-z0-9_-]{43}'
 IPV4_RE='([0-9]{1,3}\.){3}[0-9]{1,3}'
 
+# The 43-char base64url shape also matches any long snake_case identifier, so
+# descriptive function and test names kept tripping the scanner — which trains
+# people to rename good code or pad the allowlist with non-secrets. Exclude
+# single-case snake_case instead: a Reality key is 43 random base64url chars,
+# so the odds it lands entirely in [a-z0-9_] (or entirely in [A-Z0-9_]) with
+# well-formed underscores are about 2e-10. Mixed case is still scanned.
+is_source_identifier() {
+  local s="$1"
+  [[ "$s" =~ ^[a-z0-9]+(_[a-z0-9]+)+$ ]] && return 0
+  [[ "$s" =~ ^[A-Z0-9]+(_[A-Z0-9]+)+$ ]] && return 0
+  return 1
+}
+
 for f in "${FILES[@]}"; do
   # Skip binary files.
   if ! grep -Iq . "$f" 2>/dev/null; then continue; fi
@@ -191,6 +204,7 @@ for f in "${FILES[@]}"; do
 
   while IFS= read -r candidate; do
     [[ -z "$candidate" ]] && continue
+    if is_source_identifier "$candidate"; then continue; fi
     h="$(sha256_of "$candidate")"
     if is_allowlisted_hash "$h"; then continue; fi
     fail "Unknown secret-shape string in $f: '$candidate' (hash $h) — add to allowlist or remove."
