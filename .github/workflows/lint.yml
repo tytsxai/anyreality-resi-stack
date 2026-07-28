@@ -48,7 +48,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install ruff
+      # Pinned: an unpinned install lets a ruff release change the rule set
+      # under us and fail main with no code change.
+      - run: pip install ruff==0.15.22
       - name: Run ruff
         run: ruff check subscription/ tests/
 

@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 AGGREGATOR_PATH = REPO_ROOT / "subscription" / "aggregator_server.py"
 
@@ -130,9 +129,11 @@ class AggregatorCacheTest(unittest.TestCase):
 
         self.aggregator.REMOTE_STATUS_URL = "http://example.test/status"
         self.aggregator.MAX_REMOTE_STATUS_BYTES = 4
-        with patch.object(self.aggregator, "urlopen", return_value=OversizedResponse()):
-            with self.assertRaisesRegex(ValueError, "MAX_REMOTE_STATUS_BYTES=4"):
-                self.aggregator.read_remote_status()
+        with (
+            patch.object(self.aggregator, "urlopen", return_value=OversizedResponse()),
+            self.assertRaisesRegex(ValueError, "MAX_REMOTE_STATUS_BYTES=4"),
+        ):
+            self.aggregator.read_remote_status()
 
 
 if __name__ == "__main__":

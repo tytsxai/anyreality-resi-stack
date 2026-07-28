@@ -9,6 +9,7 @@ clients receive.
 
 from __future__ import annotations
 
+import http.client
 import importlib.util
 import json
 import os
@@ -244,7 +245,10 @@ class TLSEndpointTest(unittest.TestCase):
 
     def test_plaintext_request_does_not_crash_the_server(self) -> None:
         """A plain-HTTP probe against the TLS port must be dropped, not fatal."""
-        with self.assertRaises(Exception):
+        # The server drops the connection mid-handshake, which surfaces as a
+        # transport-level error rather than an HTTP response.
+        with self.assertRaises((urllib.error.URLError, http.client.HTTPException,
+                                ConnectionError)):
             urllib.request.urlopen(  # noqa: S310
                 f"http://127.0.0.1:{self.port}/healthz", timeout=5
             )
