@@ -8,20 +8,20 @@ If you need a multi-user commercial panel, billing, or expiry management, 3x-ui 
 
 > **Upstream tracking:** scores and recommendations are revised as sing-box / AnyTLS / REALITY change. The installer tracks the official apt source; this page follows each release ([Changelog](../../CHANGELOG.md)).
 >
-> **Protocol vs protocol** full scorecard (AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 / SS2022): [README · Protocol vs protocol](../../README.en.md#protocol-vs-protocol-scored). **This page below scores deployers/panels**, not the wire protocols themselves.
+> **Protocol vs protocol** (argument: AnyReality is the China-region best pick *now*): [README · protocol scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now). **This page below scores deployers/panels**, not wire protocols.
 
-## Protocol layer (pick the protocol first)
+## Protocol layer (China self-host · pick protocol first)
 
-| Protocol | Score | Status |
+| Protocol | Score | China-region role |
 |---|---:|---|
-| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default recommendation** |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy; **China-facing stagnant** |
-| Bare AnyTLS | 3.1 | Not alone |
+| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Best pick now · repo default** |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | Former mainstream · **now stagnant** |
+| Hysteria2 | 3.4 | Lossy-link specialist |
+| Bare AnyTLS | 3.1 | Incomplete → upgrade to AnyReality |
 | Trojan / classic TLS | 2.8 | Needs domain + cert |
-| Hysteria2 | 3.4 | Lossy-link strength |
 | Shadowsocks 2022 | 2.6 | Lightweight; weak camouflage |
 
-Full dimensions and notes: [README · Protocol vs protocol](../../README.en.md#protocol-vs-protocol-scored).
+Full argument and dimensions: [README scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now).
 
 ## Deployment-stack overall score
 

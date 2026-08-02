@@ -9,7 +9,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **README protocol-vs-protocol scorecard**: bilingual README compares wire protocols side-by-side (AnyReality, VLESS+REALITY+XHTTP/Vision, bare AnyTLS, Trojan/TLS, Hysteria2, SS2022) with dimension scores; clearly separate from deployer/panel comparison. China-facing VLESS marked stagnant; AnyReality preferred; scores track upstream.
+- **README protocol scorecard reframed as China-region best-pick argument**: bilingual side-by-side protocol scores (AnyReality first) with explicit “why best for China now” criteria; stagnant VLESS path demoted; upstream-tracking commitment; separate from deployer/panel comparison.
 
 ## [2.1.0] — 2026-07-28
 

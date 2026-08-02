@@ -8,20 +8,20 @@
 
 > **上游跟进**：本页评分与推荐会随 sing-box / AnyTLS / REALITY 上游变更及时修订；安装器跟踪官方 apt 源，对比表随 release 同步（见仓库 [Changelog](../../CHANGELOG.md)）。
 >
-> **协议 vs 协议** 的完整量化表（AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 / SS2022）见 [README · 与其他协议的量化评分对比](../../README.md#与其他协议的量化评分对比--protocol-vs-protocol)。**本页下面比的是部署栈 / 面板工具**，不是协议本身。
+> **协议 vs 协议**（论证「AnyReality = 中国区当前最优」）：[README · 与其他协议的量化评分对比](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。**本页下面比的是部署栈 / 面板工具**，不是协议本身。
 
-## 协议层速览（先选协议，再选部署栈）
+## 协议层速览（中国区自建 · 先选协议）
 
-| 协议 | 总分 | 状态 |
+| 协议 | 总分 | 中国区定位 |
 |---|---:|---|
-| **AnyTLS + REALITY（AnyReality）** | **4.6** | **默认推荐** |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留；**中国区已停滞** |
-| 纯 AnyTLS | 3.1 | 不推荐单独用 |
+| **AnyTLS + REALITY（AnyReality）** | **4.6** | **当前最优 · 本仓库默认** |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | 曾经主流 · **现已停滞** |
+| Hysteria2 | 3.4 | 弱网特化，非 REALITY 赛道 |
+| 纯 AnyTLS | 3.1 | 半成品，应升级 AnyReality |
 | Trojan / 传统 TLS | 2.8 | 需域名证书 |
-| Hysteria2 | 3.4 | 弱网场景 |
 | Shadowsocks 2022 | 2.6 | 轻量、抗探测弱 |
 
-全文维度表与优缺点：[README · 协议横向对比](../../README.md#与其他协议的量化评分对比--protocol-vs-protocol)。
+论证与维度表：[README · 为什么是中国区当前最优](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。
 
 ## 部署栈总分
 
