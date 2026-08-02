@@ -68,7 +68,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
 
 - **一行安装 / One-line install**: `install/install.sh` 完成系统预检、sing-box 安装、Reality 密钥生成、配置渲染、systemd 服务、UFW / fail2ban、备份 timer 和自检。
 - **AnyTLS + REALITY（AnyReality，默认）**: 默认监听 `443/tcp`，无需域名和 TLS 证书；AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 补齐服务端伪装。抗检测更强，仅 sing-box 生态支持。
-- **VLESS + Reality + xtls-rprx-vision（legacy 可选）**: 加 `--protocol vless-vision` 切换；生态最成熟、Clash/mihomo 兼容，需要 Clash 客户端时用它。
+- **VLESS + Reality + xtls-rprx-vision（legacy 可选）**: 加 `--protocol vless-vision` 切换；生态最成熟、Clash/mihomo 兼容，**仅在必须用 Clash 客户端时**使用。中国区该路线已停滞，新装默认不要选它。
 - **订阅服务 / Subscription server**: `subscription/leaf_server.py` 用 Python 标准库提供 `/<TOKEN>/`、`/<TOKEN>/status`、`/healthz`，后台采样网卡用量，并通过 `Subscription-Userinfo` 响应头给客户端显示流量卡片。
 - **开箱即用的分流规则 / Routing that works out of the box**: 下发的客户端配置自带四层规则 —— 内网直连、广告拦截、**国内域名/IP 直连（内联安全网 + `geosite-cn` / `geoip-cn` 双保险）**、QUIC 拦截，TUN 模式下导入即用，不需要手动配规则。详见 [分流规则](docs/zh-CN/ROUTING.md) / [Routing rules](docs/en/ROUTING.md)。
 - **双节点智能分流 / Dual-node smart routing**: 可用住宅节点承载 OpenAI / Anthropic / Netflix 等流量，用数据中心节点承载 Telegram / Discord 等对住宅 IP 不友好的流量。
@@ -111,6 +111,56 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 | 不想自管服务器，只想购买现成节点 | 商业机场/代理服务更省事 |
 
 在“住宅 IP 自托管 AnyReality / VLESS Reality + 新手可落地 + 低维护”这个具体场景下，本项目的综合评分和取舍见 [同类评分对比](docs/zh-CN/COMPARISON.md) / [comparison](docs/en/COMPARISON.md)。
+
+## 协议量化评分 | Protocol scorecard
+
+> **结论先看**：中国区 VLESS + REALITY 路线已基本停滞，**新装与可切换用户直接上 AnyTLS + REALITY（AnyReality）**；本仓库默认即此组合。纯 AnyTLS 也建议换成带 REALITY 的 AnyReality，而不是继续裸跑。
+>
+> **上游跟进**：评分与默认协议会随 [sing-box](https://sing-box.sagernet.org/) / AnyTLS / REALITY 上游变更及时调整；安装器默认跟踪官方 apt 源，文档与对比表随 release 同步修订（见 [Changelog](CHANGELOG.md)）。
+
+评分范围 1–5，越高越适合「自建 / 住宅 IP / 抗检测 / 可维护」场景。这是面向本仓库目标用户的产品判断，不是通用技术排行。
+
+### 总分速览
+
+| 协议组合 | 总分 | 状态 | 一句话 |
+|---|---:|---|---|
+| **AnyTLS + REALITY（AnyReality）** | **4.6** | **本仓库默认，推荐首选** | AnyTLS 自定义填充 + REALITY 服务端伪装；适合已用 / 准备用 sing-box 的用户 |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留可选；**中国区已停滞** | 生态仍最成熟、Clash/mihomo 可用，但国内侧演进停滞，新装不优先 |
+| 纯 AnyTLS（无 REALITY） | 3.1 | 不推荐单独使用 | 有填充优势，但缺服务端指纹伪装；直接上 AnyReality 更完整 |
+
+### 维度评分
+
+| 维度 | AnyReality | VLESS + REALITY + XHTTP/Vision | 纯 AnyTLS |
+|---|---:|---:|---:|
+| 抗检测 / 流量特征 | **5** | 4 | 3 |
+| 服务端伪装（无需域名证书） | **5** | **5** | 2 |
+| 客户端生态广度 | 3 | **5** | 3 |
+| 中国区活跃度 / 演进 | **5** | 2（已停滞） | 4 |
+| 配置与落地成本 | 4 | 3 | 4 |
+| 长期稳定性（实测口径） | 4 | **5** | 3 |
+| 与本仓库默认契合度 | **5** | 3（legacy） | 2 |
+
+### 方案说明
+
+#### AnyTLS + REALITY（AnyReality）— AnyTLS 用户的更强选择，也是新装默认
+
+- **优点**：AnyTLS 自定义填充让 TLS-in-TLS 更难被针对；REALITY 补齐服务器伪装（无需域名证书）；在 sing-box 中实现灵活，抓包侧伪装表现优秀。
+- **缺点**：相对经典 Reality 仍较新，成熟度略逊一档；**mihomo / 多数 Clash 系不支持**；生态主要在 sing-box 系（官方 App、Karing、Hiddify 等）。
+- **适用**：已用 sing-box、追求最新灵活填充的用户；**可切换的 VLESS 中国区用户建议直接迁到此组合**，而不是继续纯 AnyTLS 或死磕已停滞的 VLESS 路线。
+- **本仓库**：默认 `--protocol anytls-reality`（可省略）。
+
+#### VLESS + REALITY + XHTTP / Vision — 中国区已停滞（遗留）
+
+- **优点**：REALITY 无需域名证书、服务器指纹消除顶级；XHTTP 或 Vision 进一步优化流量特征与性能；生态最成熟（面板、一键脚本、客户端支持广）；实测长期稳定。
+- **缺点**：需选好目标网站（dest，支持 TLS 1.3/H2 等）；Xray 与 sing-box 生态有细微差异；**中国区上游与社区演进已基本停滞**，新装不宜再当首选。
+- **适用**：必须用 Clash / mihomo 等不支持 AnyReality 的客户端；或既有 VLESS 节点短期维持。
+- **本仓库**：加 `--protocol vless-vision` 切换；文档仍会维护，但不再作为默认推荐。
+
+#### 纯 AnyTLS — 不推荐单独上
+
+有自定义填充，但缺 REALITY 的服务端伪装。**推荐直接上 AnyTLS + REALITY（AnyReality）**，而不是纯 AnyTLS。
+
+部署栈层面（本仓库 vs 3x-ui / x-ui / 手写配置）的完整评分见 [同类评分对比](docs/zh-CN/COMPARISON.md)。
 
 ## 适用与不适用 | Fit and limits
 
@@ -304,7 +354,7 @@ Telegram 会对**历史上跑过 bot 的住宅 IP 段**做软降权。打开本�
 这就是这个项目存在的全部理由:**OpenAI / Anthropic / 银行 / Netflix 走住宅出口,Telegram / Discord 走数据中心节点**,客户端只看到一份订阅。
 
 **Q: 默认协议是什么?AnyReality 和 VLESS+Reality 怎么选?**
-默认是 **AnyReality（AnyTLS + Reality）**:AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对,Reality 补齐服务端伪装,抗检测更强,但**只有 sing-box 生态支持**(sing-box 官方 App、Karing、Hiddify 等)。如果你的客户端是 Clash 系(Clash Verge、mihomo、Stash),它们**不支持 AnyReality**,请用 `--protocol vless-vision` 部署遗留的 VLESS+Reality+Vision 节点。两者都无需域名和证书。
+默认是 **AnyReality（AnyTLS + Reality）**:AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对,Reality 补齐服务端伪装,抗检测更强,但**只有 sing-box 生态支持**(sing-box 官方 App、Karing、Hiddify 等)。**中国区 VLESS + REALITY 路线已基本停滞**,新装与可切换用户应直接上 AnyReality,而不是纯 AnyTLS。如果你的客户端是 Clash 系(Clash Verge、mihomo、Stash),它们**不支持 AnyReality**,才用 `--protocol vless-vision` 部署遗留的 VLESS+Reality+Vision 节点。两者都无需域名和证书。量化对比见 [协议量化评分](#协议量化评分--protocol-scorecard)。
 
 **Q: 刚导入订阅,连国内网站(淘宝、微信、B 站、网银)都变得又慢又卡,是节点问题吗?**
 不是。TUN 模式下**没有"全局/直连"开关,流量走不走代理完全由规则决定**,规则不完善就会把国内流量也发去海外。本项目下发的客户端配置**自带四层分流规则**(内网直连 → 广告拦截 → 国内直连 → 兜底走节点),导入即用。如果你手改过配置或用了别处的模板,对照 [分流规则](docs/zh-CN/ROUTING.md) 检查。另外注意:`geosite-cn` 规则集要从 GitHub 下载,首次启动下不来就会整个失效 —— 所以本项目在它前面额外内联了一份约 60 条的国内域名安全网,不依赖任何网络请求。

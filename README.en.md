@@ -204,6 +204,61 @@ result, degrading gracefully if the leaf is briefly unreachable.
 A scored comparison for the specific "self-hosted residential-IP AnyReality, beginner-viable, low
 maintenance" scenario lives in [comparison](docs/en/COMPARISON.md).
 
+## Protocol scorecard
+
+> **Bottom line:** the VLESS + REALITY path is largely **stagnant for the China-facing community**.
+> **New installs and users who can switch should go straight to AnyTLS + REALITY (AnyReality)** —
+> that is this repository's default. Prefer AnyReality over bare AnyTLS as well.
+>
+> **Upstream tracking:** scores and the default protocol are revised as [sing-box](https://sing-box.sagernet.org/),
+> AnyTLS, and REALITY upstream change. The installer tracks the official apt source; docs and this
+> scorecard follow each release ([Changelog](CHANGELOG.md)).
+
+Scores are 1–5 (higher is better for self-hosted / residential-IP / anti-detection / maintainability).
+These are product judgments for this repo's audience, not a universal technical ranking.
+
+### Overall
+
+| Stack | Score | Status | One-liner |
+| --- | ---: | --- | --- |
+| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default, recommended** | AnyTLS custom padding + REALITY server camouflage; best if you use or will use sing-box |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy optional; **China-facing evolution stagnant** | Still the broadest ecosystem (Clash/mihomo), but no longer the preferred new install |
+| Bare AnyTLS (no REALITY) | 3.1 | Not recommended alone | Padding helps, but no server-side fingerprint camouflage — use AnyReality instead |
+
+### Dimensions
+
+| Dimension | AnyReality | VLESS + REALITY + XHTTP/Vision | Bare AnyTLS |
+| --- | ---: | ---: | ---: |
+| Anti-detection / traffic fingerprint | **5** | 4 | 3 |
+| Server camouflage (no domain/cert) | **5** | **5** | 2 |
+| Client ecosystem breadth | 3 | **5** | 3 |
+| China-facing activity / evolution | **5** | 2 (stagnant) | 4 |
+| Setup / operational cost | 4 | 3 | 4 |
+| Long-term stability (field experience) | 4 | **5** | 3 |
+| Fit with this repository's default | **5** | 3 (legacy) | 2 |
+
+### Notes
+
+#### AnyTLS + REALITY (AnyReality) — stronger choice for AnyTLS users; default for new installs
+
+- **Pros:** custom padding makes TLS-in-TLS harder to target; REALITY supplies server camouflage without a domain or cert; flexible in sing-box; packet captures look clean.
+- **Cons:** newer than classic Reality (slightly less mature); **mihomo / most Clash clients unsupported**; ecosystem is mainly sing-box (official apps, Karing, Hiddify, …).
+- **Best for:** sing-box users who want flexible padding. **If you were on the stagnant China-facing VLESS path and can switch, migrate here** rather than bare AnyTLS.
+- **This repo:** default `--protocol anytls-reality` (omit the flag).
+
+#### VLESS + REALITY + XHTTP / Vision — China-facing stagnant (legacy)
+
+- **Pros:** REALITY needs no domain/cert and top-tier server fingerprint elimination; XHTTP or Vision further improves traffic shape and performance; most mature ecosystem (panels, one-click scripts, wide client support); long-running field stability.
+- **Cons:** dest site selection matters (TLS 1.3/H2, etc.); subtle Xray vs sing-box differences; **China-facing upstream/community evolution has largely stalled** — not the preferred new install.
+- **Best for:** Clash / mihomo clients that cannot speak AnyReality, or short-term keep of existing VLESS nodes.
+- **This repo:** `--protocol vless-vision`. Still maintained, no longer the default recommendation.
+
+#### Bare AnyTLS — do not run alone
+
+Padding without REALITY server camouflage is incomplete. **Prefer AnyTLS + REALITY (AnyReality) over bare AnyTLS.**
+
+Deployment-stack scoring (this project vs 3x-ui / x-ui / manual config) is in [comparison](docs/en/COMPARISON.md).
+
 ## Fit and limits
 
 **Good fit**

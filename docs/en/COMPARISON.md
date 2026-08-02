@@ -2,17 +2,31 @@
 
 This is not a universal "best proxy project" ranking. It scores tools for one specific use case:
 
-> You already own a VPS, especially a residential-IP VPS. You want a self-hosted VLESS Reality node, beginner-friendly deployment, low maintenance, and a practical answer to Telegram / Discord soft-throttling on some residential subnets.
+> You already own a VPS, especially a residential-IP VPS. You want a self-hosted **AnyReality (AnyTLS + REALITY, default)** or legacy VLESS Reality node, beginner-friendly deployment, low maintenance, and a practical answer to Telegram / Discord soft-throttling on some residential subnets.
 
 If you need a multi-user commercial panel, billing, or expiry management, 3x-ui / x-ui may be a better fit. If you need a simple, auditable, low-exposure residential-IP node for yourself or a small team, `anyreality-resi-stack` is deliberately narrower.
 
-## Overall score
+> **Upstream tracking:** scores and recommendations are revised as sing-box / AnyTLS / REALITY change. The installer tracks the official apt source; this page follows each release ([Changelog](../../CHANGELOG.md)). For the protocol-layer scorecard see the [README protocol scorecard](../../README.en.md#protocol-scorecard).
 
-Scores are 1-5. Higher means better fit for "residential-IP self-hosted VLESS Reality + beginner deployment + low maintenance".
+## Protocol layer (pick the protocol first)
+
+The **VLESS + REALITY + XHTTP / Vision** path is largely stagnant for the China-facing community. **New installs and users who can switch should go straight to AnyTLS + REALITY (AnyReality)**. Prefer that over bare AnyTLS as well.
+
+| Stack | Score | Status | Note |
+|---|---:|---|---|
+| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default recommendation** | Custom padding + server camouflage; sing-box ecosystem; this repo's default |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy; **China-facing stagnant** | Broadest ecosystem / Clash OK; not preferred for new installs |
+| Bare AnyTLS | 3.1 | Not recommended alone | Missing REALITY camouflage; use AnyReality |
+
+Full dimension table and pros/cons: [README protocol scorecard](../../README.en.md#protocol-scorecard).
+
+## Deployment-stack overall score
+
+Scores are 1-5. Higher means better fit for "residential-IP self-hosted AnyReality + beginner deployment + low maintenance".
 
 | Option | Score | Best fit | Trade-off |
 |---|---:|---|---|
-| anyreality-resi-stack | 4.7 | Personal residential-IP users, small teams, AI-tool users | Narrow scope, fast deployment, strong residential-IP workflow, no multi-user panel |
+| anyreality-resi-stack | 4.7 | Personal residential-IP users, small teams, AI-tool users | Narrow scope, fast deployment, strong residential-IP workflow, no multi-user panel; AnyReality by default |
 | 3x-ui | 3.8 | Users who need a web panel, many protocols, and multi-user management | Rich features, higher operational surface |
 | x-ui | 3.5 | Users who want an Xray panel for multi-protocol management | Strong panel workflow, residential-IP split routing is not the default focus |
 | Manual Xray/sing-box config | 3.2 | Operators who already understand protocol details | Most flexible, highest beginner cost |

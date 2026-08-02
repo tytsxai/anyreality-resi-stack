@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **README protocol scorecard**: bilingual README and comparison docs now include a quantitative protocol comparison (AnyReality vs VLESS+REALITY+XHTTP/Vision vs bare AnyTLS). States that the China-facing VLESS path is stagnant, recommends AnyReality for new installs and migrations, and notes scores/defaults track sing-box / AnyTLS / REALITY upstream.
+
 ## [2.1.0] — 2026-07-28
 
 > **Production-readiness release.** No breaking changes to the protocol, the

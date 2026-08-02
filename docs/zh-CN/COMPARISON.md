@@ -2,17 +2,31 @@
 
 这不是“谁更高级”的通用排名，而是围绕一个具体场景评分：
 
-> 已经有自己的 VPS，尤其是住宅 IP VPS；想部署自用 VLESS Reality；希望新手能照文档落地；后续维护成本低；最好能处理 Telegram / Discord 对住宅 IP 软降权的问题。
+> 已经有自己的 VPS，尤其是住宅 IP VPS；想部署自用 **AnyReality（AnyTLS + REALITY，默认）** 或遗留 VLESS Reality；希望新手能照文档落地；后续维护成本低；最好能处理 Telegram / Discord 对住宅 IP 软降权的问题。
 
 如果你要做多用户商业面板、计费、到期管理，3x-ui / x-ui 这类项目会更合适。如果你只是要一个自用、可审计、低暴露面的住宅 IP 节点，`anyreality-resi-stack` 的取舍更直接。
 
-## 总分
+> **上游跟进**：本页评分与推荐会随 sing-box / AnyTLS / REALITY 上游变更及时修订；安装器跟踪官方 apt 源，对比表随 release 同步（见仓库 [Changelog](../../CHANGELOG.md)）。协议层速览也可直接看 [README 协议量化评分](../../README.md#协议量化评分--protocol-scorecard)。
 
-评分范围 1-5，分数越高表示越适合“住宅 IP 自托管 VLESS Reality + 新手可落地 + 低维护”这个场景。
+## 协议层速览（先选协议，再选部署栈）
+
+中国区 **VLESS + REALITY + XHTTP / Vision** 路线已基本停滞；**新装与可切换用户直接上 AnyTLS + REALITY（AnyReality）**。纯 AnyTLS 也建议换成带 REALITY 的组合。
+
+| 协议组合 | 总分 | 状态 | 说明 |
+|---|---:|---|---|
+| **AnyTLS + REALITY（AnyReality）** | **4.6** | **默认推荐** | 自定义填充 + 服务端伪装；sing-box 系；本仓库默认 |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留；**中国区已停滞** | 生态最广、Clash 可用；新装不优先 |
+| 纯 AnyTLS | 3.1 | 不推荐单独用 | 缺 REALITY 伪装；直接上 AnyReality |
+
+维度细表与优缺点全文见 [README 协议量化评分](../../README.md#协议量化评分--protocol-scorecard)。
+
+## 部署栈总分
+
+评分范围 1-5，分数越高表示越适合“住宅 IP 自托管 AnyReality + 新手可落地 + 低维护”这个场景。
 
 | 方案 | 总分 | 最适合的用户 | 核心取舍 |
 |---|---:|---|---|
-| anyreality-resi-stack | 4.7 | 自用住宅 IP / 小团队 / AI 工具用户 | 范围窄、部署快、住宅 IP 场景强，不做多用户面板 |
+| anyreality-resi-stack | 4.7 | 自用住宅 IP / 小团队 / AI 工具用户 | 范围窄、部署快、住宅 IP 场景强，不做多用户面板；默认 AnyReality |
 | 3x-ui | 3.8 | 需要 Web 面板、多协议、多用户管理的人 | 功能丰富，但面板和数据库带来更高运维面 |
 | x-ui | 3.5 | 想用 Xray 面板快速管理多协议的人 | 面板能力强，自用住宅 IP 分流不是默认重点 |
 | 手写 Xray/sing-box 配置 | 3.2 | 熟悉协议和配置的人 | 最灵活，但新手成本最高 |
