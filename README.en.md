@@ -204,60 +204,74 @@ result, degrading gracefully if the leaf is briefly unreachable.
 A scored comparison for the specific "self-hosted residential-IP AnyReality, beginner-viable, low
 maintenance" scenario lives in [comparison](docs/en/COMPARISON.md).
 
-## Protocol scorecard
+## Protocol vs protocol (scored)
 
-> **Bottom line:** the VLESS + REALITY path is largely **stagnant for the China-facing community**.
-> **New installs and users who can switch should go straight to AnyTLS + REALITY (AnyReality)** —
-> that is this repository's default. Prefer AnyReality over bare AnyTLS as well.
+> This section compares **protocols** (AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 / …),
+> **not** deployers like 3x-ui or x-ui. For installer/panel scoring see [comparison](docs/en/COMPARISON.md).
 >
-> **Upstream tracking:** scores and the default protocol are revised as [sing-box](https://sing-box.sagernet.org/),
-> AnyTLS, and REALITY upstream change. The installer tracks the official apt source; docs and this
-> scorecard follow each release ([Changelog](CHANGELOG.md)).
+> **Bottom line:** China-facing **VLESS + REALITY** evolution is largely stagnant.
+> **New installs and switchable users should go to AnyTLS + REALITY (AnyReality)**.
+> Bare AnyTLS is also weaker than AnyReality. This repo defaults to AnyReality.
+>
+> **Upstream tracking:** the table is **revised promptly** as [sing-box](https://sing-box.sagernet.org/),
+> AnyTLS, REALITY, and peer protocol upstreams change. The installer tracks the official apt source;
+> scores and defaults follow each release ([Changelog](CHANGELOG.md)).
 
-Scores are 1–5 (higher is better for self-hosted / residential-IP / anti-detection / maintainability).
-These are product judgments for this repo's audience, not a universal technical ranking.
+Scores 1–5 (higher = better for self-hosted / residential-IP / anti-detection / maintainability).
+Product judgment for this audience, not a lab benchmark.
 
-### Overall
+### Overall (protocols side-by-side)
 
-| Stack | Score | Status | One-liner |
+| Protocol | Score | Status | One-liner |
 | --- | ---: | --- | --- |
-| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default, recommended** | AnyTLS custom padding + REALITY server camouflage; best if you use or will use sing-box |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy optional; **China-facing evolution stagnant** | Still the broadest ecosystem (Clash/mihomo), but no longer the preferred new install |
-| Bare AnyTLS (no REALITY) | 3.1 | Not recommended alone | Padding helps, but no server-side fingerprint camouflage — use AnyReality instead |
+| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default · preferred** | Custom padding + server camouflage; best sing-box-path pick |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy; **China-facing stagnant** | Broadest ecosystem / long stability; no longer preferred for new installs |
+| Bare AnyTLS (no REALITY) | 3.1 | Not alone | Padding without camouflage → upgrade to AnyReality |
+| Trojan / classic TLS (domain + cert) | 2.8 | Legacy option | Needs domain, cert, real site or reverse proxy |
+| Hysteria2 | 3.4 | Strong on lossy links | UDP/QUIC path; different trade-offs than REALITY camouflage |
+| Shadowsocks 2022 | 2.6 | Lightweight crypto proxy | Simple + wide clients; weak TLS-layer camouflage / active-probe resistance |
 
-### Dimensions
+### Dimensions (protocols side-by-side)
 
-| Dimension | AnyReality | VLESS + REALITY + XHTTP/Vision | Bare AnyTLS |
-| --- | ---: | ---: | ---: |
-| Anti-detection / traffic fingerprint | **5** | 4 | 3 |
-| Server camouflage (no domain/cert) | **5** | **5** | 2 |
-| Client ecosystem breadth | 3 | **5** | 3 |
-| China-facing activity / evolution | **5** | 2 (stagnant) | 4 |
-| Setup / operational cost | 4 | 3 | 4 |
-| Long-term stability (field experience) | 4 | **5** | 3 |
-| Fit with this repository's default | **5** | 3 (legacy) | 2 |
+| Dimension | **AnyReality** | VLESS+R+XHTTP/Vision | Bare AnyTLS | Trojan/TLS | Hysteria2 | SS2022 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Anti-detection / traffic fingerprint | **5** | 4 | 3 | 3 | 3 | 2 |
+| Server camouflage / no own domain+cert | **5** | **5** | 2 | 1 | 2 | 1 |
+| Client ecosystem breadth | 3 | **5** | 3 | **5** | 4 | **5** |
+| China-facing activity / evolution | **5** | 2 (stagnant) | 4 | 2 | 4 | 3 |
+| Setup / operational cost | 4 | 3 | 4 | 2 | 3 | **5** |
+| Long-term stability (field) | 4 | **5** | 3 | 4 | 4 | 4 |
+| Fit with this repo default | **5** | 3 (legacy) | 2 | 1 | 1 | 1 |
 
-### Notes
+### Focus notes
 
-#### AnyTLS + REALITY (AnyReality) — stronger choice for AnyTLS users; default for new installs
+#### AnyTLS + REALITY (AnyReality) — preferred; stronger choice for AnyTLS users
 
-- **Pros:** custom padding makes TLS-in-TLS harder to target; REALITY supplies server camouflage without a domain or cert; flexible in sing-box; packet captures look clean.
-- **Cons:** newer than classic Reality (slightly less mature); **mihomo / most Clash clients unsupported**; ecosystem is mainly sing-box (official apps, Karing, Hiddify, …).
-- **Best for:** sing-box users who want flexible padding. **If you were on the stagnant China-facing VLESS path and can switch, migrate here** rather than bare AnyTLS.
-- **This repo:** default `--protocol anytls-reality` (omit the flag).
+- **Pros:** custom padding hardens TLS-in-TLS; REALITY adds server camouflage (**no domain/cert**); flexible in sing-box; clean packet captures.
+- **Cons:** newer than classic Reality; **mihomo unsupported**; mostly sing-box clients (official apps, Karing, Hiddify, …).
+- **Best for:** sing-box users wanting flexible padding. **Migrate here from stagnant China-facing VLESS or bare AnyTLS when you can.**
+- **This repo:** default `--protocol anytls-reality` (flag optional).
 
-#### VLESS + REALITY + XHTTP / Vision — China-facing stagnant (legacy)
+#### VLESS + REALITY + XHTTP / Vision — China-facing stagnant
 
-- **Pros:** REALITY needs no domain/cert and top-tier server fingerprint elimination; XHTTP or Vision further improves traffic shape and performance; most mature ecosystem (panels, one-click scripts, wide client support); long-running field stability.
-- **Cons:** dest site selection matters (TLS 1.3/H2, etc.); subtle Xray vs sing-box differences; **China-facing upstream/community evolution has largely stalled** — not the preferred new install.
-- **Best for:** Clash / mihomo clients that cannot speak AnyReality, or short-term keep of existing VLESS nodes.
-- **This repo:** `--protocol vless-vision`. Still maintained, no longer the default recommendation.
+- **Pros:** REALITY needs no domain/cert; top server-fingerprint elimination; XHTTP/Vision improve shape/performance; most mature ecosystem; long field stability.
+- **Cons:** dest site matters (TLS 1.3/H2, …); Xray vs sing-box quirks; **China-facing upstream/community largely stalled** — not the default for new installs.
+- **Best for:** Clash/mihomo-only clients, or short-term keep of existing nodes.
+- **This repo:** `--protocol vless-vision` (legacy; maintained, not recommended as default).
 
 #### Bare AnyTLS — do not run alone
 
-Padding without REALITY server camouflage is incomplete. **Prefer AnyTLS + REALITY (AnyReality) over bare AnyTLS.**
+Padding without REALITY camouflage is incomplete → **use AnyReality**.
 
-Deployment-stack scoring (this project vs 3x-ui / x-ui / manual config) is in [comparison](docs/en/COMPARISON.md).
+#### Other common protocols (context only)
+
+| Protocol | Still a fit when… | Trade-off vs AnyReality |
+| --- | --- | --- |
+| Trojan / classic TLS | You already run domain + cert + reverse proxy | Higher ops cost; no REALITY-style borrowed fingerprint |
+| Hysteria2 | Lossy links / want to push bandwidth | Different path (UDP/QUIC); not the REALITY camouflage track |
+| Shadowsocks 2022 | Low-scrutiny / minimal setup | Much weaker active-probe resistance and TLS camouflage |
+
+Installer/panel scoring (this project vs 3x-ui / x-ui) lives in [comparison](docs/en/COMPARISON.md).
 
 ## Fit and limits
 

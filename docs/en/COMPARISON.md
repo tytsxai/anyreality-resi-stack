@@ -6,19 +6,22 @@ This is not a universal "best proxy project" ranking. It scores tools for one sp
 
 If you need a multi-user commercial panel, billing, or expiry management, 3x-ui / x-ui may be a better fit. If you need a simple, auditable, low-exposure residential-IP node for yourself or a small team, `anyreality-resi-stack` is deliberately narrower.
 
-> **Upstream tracking:** scores and recommendations are revised as sing-box / AnyTLS / REALITY change. The installer tracks the official apt source; this page follows each release ([Changelog](../../CHANGELOG.md)). For the protocol-layer scorecard see the [README protocol scorecard](../../README.en.md#protocol-scorecard).
+> **Upstream tracking:** scores and recommendations are revised as sing-box / AnyTLS / REALITY change. The installer tracks the official apt source; this page follows each release ([Changelog](../../CHANGELOG.md)).
+>
+> **Protocol vs protocol** full scorecard (AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 / SS2022): [README · Protocol vs protocol](../../README.en.md#protocol-vs-protocol-scored). **This page below scores deployers/panels**, not the wire protocols themselves.
 
 ## Protocol layer (pick the protocol first)
 
-The **VLESS + REALITY + XHTTP / Vision** path is largely stagnant for the China-facing community. **New installs and users who can switch should go straight to AnyTLS + REALITY (AnyReality)**. Prefer that over bare AnyTLS as well.
+| Protocol | Score | Status |
+|---|---:|---|
+| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default recommendation** |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy; **China-facing stagnant** |
+| Bare AnyTLS | 3.1 | Not alone |
+| Trojan / classic TLS | 2.8 | Needs domain + cert |
+| Hysteria2 | 3.4 | Lossy-link strength |
+| Shadowsocks 2022 | 2.6 | Lightweight; weak camouflage |
 
-| Stack | Score | Status | Note |
-|---|---:|---|---|
-| **AnyTLS + REALITY (AnyReality)** | **4.6** | **Default recommendation** | Custom padding + server camouflage; sing-box ecosystem; this repo's default |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | Legacy; **China-facing stagnant** | Broadest ecosystem / Clash OK; not preferred for new installs |
-| Bare AnyTLS | 3.1 | Not recommended alone | Missing REALITY camouflage; use AnyReality |
-
-Full dimension table and pros/cons: [README protocol scorecard](../../README.en.md#protocol-scorecard).
+Full dimensions and notes: [README · Protocol vs protocol](../../README.en.md#protocol-vs-protocol-scored).
 
 ## Deployment-stack overall score
 

@@ -112,55 +112,68 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 
 在“住宅 IP 自托管 AnyReality / VLESS Reality + 新手可落地 + 低维护”这个具体场景下，本项目的综合评分和取舍见 [同类评分对比](docs/zh-CN/COMPARISON.md) / [comparison](docs/en/COMPARISON.md)。
 
-## 协议量化评分 | Protocol scorecard
+## 与其他协议的量化评分对比 | Protocol vs protocol
 
-> **结论先看**：中国区 VLESS + REALITY 路线已基本停滞，**新装与可切换用户直接上 AnyTLS + REALITY（AnyReality）**；本仓库默认即此组合。纯 AnyTLS 也建议换成带 REALITY 的 AnyReality，而不是继续裸跑。
+> 本节比的是**协议本身**（AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 等），**不是** 3x-ui、x-ui 这类部署工具。部署栈对比见 [同类评分对比](docs/zh-CN/COMPARISON.md)。
 >
-> **上游跟进**：评分与默认协议会随 [sing-box](https://sing-box.sagernet.org/) / AnyTLS / REALITY 上游变更及时调整；安装器默认跟踪官方 apt 源，文档与对比表随 release 同步修订（见 [Changelog](CHANGELOG.md)）。
+> **结论**：中国区 **VLESS + REALITY** 路线已基本停滞；**新装与可切换用户直接上 AnyTLS + REALITY（AnyReality）**。纯 AnyTLS 也不如加上 REALITY。本仓库默认即 AnyReality。
+>
+> **上游跟进**：下表会随 [sing-box](https://sing-box.sagernet.org/) / AnyTLS / REALITY / 各协议上游变更**及时修订**；安装器跟踪官方 apt 源，对比与默认协议随 release 同步（见 [Changelog](CHANGELOG.md)）。
 
-评分范围 1–5，越高越适合「自建 / 住宅 IP / 抗检测 / 可维护」场景。这是面向本仓库目标用户的产品判断，不是通用技术排行。
+评分 1–5，越高越适合「自建节点 / 住宅 IP / 抗检测 / 可维护」。产品判断口径，非实验室基准测试。
 
-### 总分速览
+### 总分（协议横向对比）
 
-| 协议组合 | 总分 | 状态 | 一句话 |
+| 协议 | 总分 | 状态 | 一句话 |
 |---|---:|---|---|
-| **AnyTLS + REALITY（AnyReality）** | **4.6** | **本仓库默认，推荐首选** | AnyTLS 自定义填充 + REALITY 服务端伪装；适合已用 / 准备用 sing-box 的用户 |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留可选；**中国区已停滞** | 生态仍最成熟、Clash/mihomo 可用，但国内侧演进停滞，新装不优先 |
-| 纯 AnyTLS（无 REALITY） | 3.1 | 不推荐单独使用 | 有填充优势，但缺服务端指纹伪装；直接上 AnyReality 更完整 |
+| **AnyTLS + REALITY（AnyReality）** | **4.6** | **本仓库默认 · 首选** | 自定义填充 + 服务端伪装；sing-box 系最优解 |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留；**中国区已停滞** | 生态最广、长期稳；国内侧不再演进，新装不优先 |
+| 纯 AnyTLS（无 REALITY） | 3.1 | 不推荐单独用 | 有填充、缺伪装 → 应升级为 AnyReality |
+| Trojan / 传统 TLS（需域名证书） | 2.8 | 老牌备选 | 依赖域名 + 证书 + 真站或反代；证书与 SNI 运维成本高 |
+| Hysteria2 | 3.4 | 弱网/高丢包场景强 | UDP/QUIC 向；抗丢包好，特征与防火墙策略不同，非 REALITY 伪装路线 |
+| Shadowsocks 2022 | 2.6 | 轻量加密代理 | 实现简单、客户端多；几乎无 TLS 层伪装，抗主动探测弱 |
 
-### 维度评分
+### 维度评分（协议横向）
 
-| 维度 | AnyReality | VLESS + REALITY + XHTTP/Vision | 纯 AnyTLS |
-|---|---:|---:|---:|
-| 抗检测 / 流量特征 | **5** | 4 | 3 |
-| 服务端伪装（无需域名证书） | **5** | **5** | 2 |
-| 客户端生态广度 | 3 | **5** | 3 |
-| 中国区活跃度 / 演进 | **5** | 2（已停滞） | 4 |
-| 配置与落地成本 | 4 | 3 | 4 |
-| 长期稳定性（实测口径） | 4 | **5** | 3 |
-| 与本仓库默认契合度 | **5** | 3（legacy） | 2 |
+| 维度 | **AnyReality** | VLESS+R+XHTTP/Vision | 纯 AnyTLS | Trojan/TLS | Hysteria2 | SS2022 |
+|---|---:|---:|---:|---:|---:|---:|
+| 抗检测 / 流量特征 | **5** | 4 | 3 | 3 | 3 | 2 |
+| 服务端伪装 / 无需自备域名证书 | **5** | **5** | 2 | 1 | 2 | 1 |
+| 客户端生态广度 | 3 | **5** | 3 | **5** | 4 | **5** |
+| 中国区活跃度 / 演进 | **5** | 2（停滞） | 4 | 2 | 4 | 3 |
+| 配置与落地成本 | 4 | 3 | 4 | 2 | 3 | **5** |
+| 长期稳定性（实测口径） | 4 | **5** | 3 | 4 | 4 | 4 |
+| 本仓库默认契合 | **5** | 3（legacy） | 2 | 1 | 1 | 1 |
 
-### 方案说明
+### 重点协议说明
 
-#### AnyTLS + REALITY（AnyReality）— AnyTLS 用户的更强选择，也是新装默认
+#### AnyTLS + REALITY（AnyReality）— 首选；AnyTLS 用户的更强选择
 
-- **优点**：AnyTLS 自定义填充让 TLS-in-TLS 更难被针对；REALITY 补齐服务器伪装（无需域名证书）；在 sing-box 中实现灵活，抓包侧伪装表现优秀。
-- **缺点**：相对经典 Reality 仍较新，成熟度略逊一档；**mihomo / 多数 Clash 系不支持**；生态主要在 sing-box 系（官方 App、Karing、Hiddify 等）。
-- **适用**：已用 sing-box、追求最新灵活填充的用户；**可切换的 VLESS 中国区用户建议直接迁到此组合**，而不是继续纯 AnyTLS 或死磕已停滞的 VLESS 路线。
+- **优点**：AnyTLS 自定义填充让 TLS-in-TLS 更难被针对；REALITY 补齐服务器伪装（**无需域名证书**）；sing-box 实现灵活，抓包侧伪装优秀。
+- **缺点**：较新（成熟度略逊经典 Reality）；**mihomo 不支持**；生态主要在 sing-box（官方 App、Karing、Hiddify 等）。
+- **适用**：已用 / 准备用 sing-box、追求最新灵活填充的用户。**可切换的原 VLESS 中国区用户、纯 AnyTLS 用户，建议直接上这一组合**。
 - **本仓库**：默认 `--protocol anytls-reality`（可省略）。
 
-#### VLESS + REALITY + XHTTP / Vision — 中国区已停滞（遗留）
+#### VLESS + REALITY + XHTTP / Vision — 中国区已停滞
 
-- **优点**：REALITY 无需域名证书、服务器指纹消除顶级；XHTTP 或 Vision 进一步优化流量特征与性能；生态最成熟（面板、一键脚本、客户端支持广）；实测长期稳定。
-- **缺点**：需选好目标网站（dest，支持 TLS 1.3/H2 等）；Xray 与 sing-box 生态有细微差异；**中国区上游与社区演进已基本停滞**，新装不宜再当首选。
-- **适用**：必须用 Clash / mihomo 等不支持 AnyReality 的客户端；或既有 VLESS 节点短期维持。
-- **本仓库**：加 `--protocol vless-vision` 切换；文档仍会维护，但不再作为默认推荐。
+- **优点**：REALITY 无需域名证书、服务器指纹消除顶级；XHTTP 或 Vision 优化流量特征与性能；生态最成熟（面板、一键脚本、客户端广）；实测长期稳定。
+- **缺点**：需选好 dest（TLS 1.3/H2 等）；Xray 与 sing-box 有细微差异；**中国区上游/社区已基本停滞**，新装不宜再当默认。
+- **适用**：必须用 Clash / mihomo；或既有节点短期维持。
+- **本仓库**：`--protocol vless-vision`（legacy，仍维护，非默认推荐）。
 
-#### 纯 AnyTLS — 不推荐单独上
+#### 纯 AnyTLS — 不要单独上
 
-有自定义填充，但缺 REALITY 的服务端伪装。**推荐直接上 AnyTLS + REALITY（AnyReality）**，而不是纯 AnyTLS。
+有填充、无 REALITY 伪装 → **直接上 AnyReality**，而不是纯 AnyTLS。
 
-部署栈层面（本仓库 vs 3x-ui / x-ui / 手写配置）的完整评分见 [同类评分对比](docs/zh-CN/COMPARISON.md)。
+#### 其他常见协议（对照用）
+
+| 协议 | 何时还值得选 | 相对 AnyReality 的取舍 |
+|---|---|---|
+| Trojan / 传统 TLS | 已有域名、证书与反代体系 | 运维面更大；无 REALITY 级「借指纹」能力 |
+| Hysteria2 | 高丢包、弱网、要吃满带宽 | 路线不同（UDP/QUIC）；不是 REALITY 伪装赛道 |
+| Shadowsocks 2022 | 内网/低审查环境、极简部署 | 抗主动探测与 TLS 伪装明显弱一档 |
+
+若要比的是**安装器 / 面板**（本仓库 vs 3x-ui / x-ui），见 [同类评分对比](docs/zh-CN/COMPARISON.md)。
 
 ## 适用与不适用 | Fit and limits
 
@@ -354,7 +367,7 @@ Telegram 会对**历史上跑过 bot 的住宅 IP 段**做软降权。打开本�
 这就是这个项目存在的全部理由:**OpenAI / Anthropic / 银行 / Netflix 走住宅出口,Telegram / Discord 走数据中心节点**,客户端只看到一份订阅。
 
 **Q: 默认协议是什么?AnyReality 和 VLESS+Reality 怎么选?**
-默认是 **AnyReality（AnyTLS + Reality）**:AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对,Reality 补齐服务端伪装,抗检测更强,但**只有 sing-box 生态支持**(sing-box 官方 App、Karing、Hiddify 等)。**中国区 VLESS + REALITY 路线已基本停滞**,新装与可切换用户应直接上 AnyReality,而不是纯 AnyTLS。如果你的客户端是 Clash 系(Clash Verge、mihomo、Stash),它们**不支持 AnyReality**,才用 `--protocol vless-vision` 部署遗留的 VLESS+Reality+Vision 节点。两者都无需域名和证书。量化对比见 [协议量化评分](#协议量化评分--protocol-scorecard)。
+默认是 **AnyReality（AnyTLS + Reality）**:AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对,Reality 补齐服务端伪装,抗检测更强,但**只有 sing-box 生态支持**(sing-box 官方 App、Karing、Hiddify 等)。**中国区 VLESS + REALITY 路线已基本停滞**,新装与可切换用户应直接上 AnyReality,而不是纯 AnyTLS。如果你的客户端是 Clash 系(Clash Verge、mihomo、Stash),它们**不支持 AnyReality**,才用 `--protocol vless-vision` 部署遗留的 VLESS+Reality+Vision 节点。两者都无需域名和证书。量化对比见 [与其他协议的量化评分对比](#与其他协议的量化评分对比--protocol-vs-protocol)。
 
 **Q: 刚导入订阅,连国内网站(淘宝、微信、B 站、网银)都变得又慢又卡,是节点问题吗?**
 不是。TUN 模式下**没有"全局/直连"开关,流量走不走代理完全由规则决定**,规则不完善就会把国内流量也发去海外。本项目下发的客户端配置**自带四层分流规则**(内网直连 → 广告拦截 → 国内直连 → 兜底走节点),导入即用。如果你手改过配置或用了别处的模板,对照 [分流规则](docs/zh-CN/ROUTING.md) 检查。另外注意:`geosite-cn` 规则集要从 GitHub 下载,首次启动下不来就会整个失效 —— 所以本项目在它前面额外内联了一份约 60 条的国内域名安全网,不依赖任何网络请求。

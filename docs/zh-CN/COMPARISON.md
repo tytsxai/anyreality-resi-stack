@@ -6,19 +6,22 @@
 
 如果你要做多用户商业面板、计费、到期管理，3x-ui / x-ui 这类项目会更合适。如果你只是要一个自用、可审计、低暴露面的住宅 IP 节点，`anyreality-resi-stack` 的取舍更直接。
 
-> **上游跟进**：本页评分与推荐会随 sing-box / AnyTLS / REALITY 上游变更及时修订；安装器跟踪官方 apt 源，对比表随 release 同步（见仓库 [Changelog](../../CHANGELOG.md)）。协议层速览也可直接看 [README 协议量化评分](../../README.md#协议量化评分--protocol-scorecard)。
+> **上游跟进**：本页评分与推荐会随 sing-box / AnyTLS / REALITY 上游变更及时修订；安装器跟踪官方 apt 源，对比表随 release 同步（见仓库 [Changelog](../../CHANGELOG.md)）。
+>
+> **协议 vs 协议** 的完整量化表（AnyReality / VLESS Reality / AnyTLS / Trojan / Hysteria2 / SS2022）见 [README · 与其他协议的量化评分对比](../../README.md#与其他协议的量化评分对比--protocol-vs-protocol)。**本页下面比的是部署栈 / 面板工具**，不是协议本身。
 
 ## 协议层速览（先选协议，再选部署栈）
 
-中国区 **VLESS + REALITY + XHTTP / Vision** 路线已基本停滞；**新装与可切换用户直接上 AnyTLS + REALITY（AnyReality）**。纯 AnyTLS 也建议换成带 REALITY 的组合。
+| 协议 | 总分 | 状态 |
+|---|---:|---|
+| **AnyTLS + REALITY（AnyReality）** | **4.6** | **默认推荐** |
+| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留；**中国区已停滞** |
+| 纯 AnyTLS | 3.1 | 不推荐单独用 |
+| Trojan / 传统 TLS | 2.8 | 需域名证书 |
+| Hysteria2 | 3.4 | 弱网场景 |
+| Shadowsocks 2022 | 2.6 | 轻量、抗探测弱 |
 
-| 协议组合 | 总分 | 状态 | 说明 |
-|---|---:|---|---|
-| **AnyTLS + REALITY（AnyReality）** | **4.6** | **默认推荐** | 自定义填充 + 服务端伪装；sing-box 系；本仓库默认 |
-| VLESS + REALITY + XHTTP / Vision | 3.7 | 遗留；**中国区已停滞** | 生态最广、Clash 可用；新装不优先 |
-| 纯 AnyTLS | 3.1 | 不推荐单独用 | 缺 REALITY 伪装；直接上 AnyReality |
-
-维度细表与优缺点全文见 [README 协议量化评分](../../README.md#协议量化评分--protocol-scorecard)。
+全文维度表与优缺点：[README · 协议横向对比](../../README.md#与其他协议的量化评分对比--protocol-vs-protocol)。
 
 ## 部署栈总分
 
