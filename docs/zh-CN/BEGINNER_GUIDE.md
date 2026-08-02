@@ -100,9 +100,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
   --with-subscription
 ```
 
-默认安装即 **AnyReality（AnyTLS + REALITY）**，无需额外参数。AnyReality 用密码认证（`ANYTLS_PASSWORD`，存于 `/etc/anyreality-resi-stack/secrets.env`），没有 UUID / flow，同样无需域名和证书。
+默认安装即 **AnyReality（AnyTLS + REALITY）**，无需额外参数。这是本仓库在中国区自建场景下的**推荐默认**（相对已停滞的 VLESS Reality 路线）；论证见 [README 协议评分](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。AnyReality 用密码认证（`ANYTLS_PASSWORD`，存于 `/etc/anyreality-resi-stack/secrets.env`），没有 UUID / flow，同样无需域名和证书。
 
-如果你的客户端是 **Clash 系**（Clash Verge Rev 等），注意 Clash/mihomo **不支持 AnyReality**，需要改用遗留协议安装，加上 `--protocol vless-vision`：
+如果你的客户端是 **Clash 系**（Clash Verge Rev 等），注意 Clash/mihomo **不支持 AnyReality**——这是兼容妥协，不是更优协议。需要改用遗留协议安装，加上 `--protocol vless-vision`：
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \

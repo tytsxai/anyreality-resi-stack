@@ -42,7 +42,7 @@
 - [新手完整教程](zh-CN/BEGINNER_GUIDE.md): 从买 VPS 前检查、SSH、`--dry-run`、正式安装、保存订阅 URL、客户端导入到 OpenAI/IP 验证。
 - [常见问题 FAQ](zh-CN/FAQ.md): 项目定位、协议选择、安装部署、订阅安全、分流行为、双节点、运维与许可边界的集中问答。
 - [命令示例](zh-CN/EXAMPLES.md): 按场景整理的安装与运维命令配方（dry-run、Clash 兼容、自定义端口、流量卡片、固定版本、无人值守、双节点、卸载）。
-- [同类评分对比](zh-CN/COMPARISON.md): 面向住宅 IP 自托管 AnyReality / VLESS Reality 场景，对比 3x-ui、x-ui、手写配置和商业服务。
+- [同类评分对比](zh-CN/COMPARISON.md): 部署栈 / 面板对比（本仓库 vs 3x-ui、x-ui、手写配置、商业服务）；协议层「中国区当前最优 = AnyReality」见 [README 协议评分](../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。
 - [部署指南](zh-CN/DEPLOYMENT.md): 从空白 VPS 到 AnyReality 节点上线（含 `--protocol vless-vision` 遗留选项），包括一行安装、`--config`、验证清单和卸载。
 - [双节点 + 智能分流](zh-CN/DUAL-NODE.md): 住宅节点与数据中心节点如何协作，为什么 Telegram / Discord 适合走 DC，OpenAI / Anthropic / Netflix 适合走住宅出口。
 - [订阅服务设计](zh-CN/SUBSCRIPTION.md): `leaf_server.py`、`aggregator_server.py`、`Subscription-Userinfo`、`/healthz`、`/<TOKEN>/status` 和缓存回退逻辑。
@@ -57,7 +57,7 @@
 - [Beginner guide](en/BEGINNER_GUIDE.md): VPS prerequisites, SSH, `--dry-run`, install, saving the subscription URL, client import, and OpenAI/IP verification.
 - [FAQ](en/FAQ.md): Consolidated answers on positioning, protocol choice, installation, subscription security, routing behaviour, dual-node, operations, and license boundaries.
 - [Usage examples](en/EXAMPLES.md): Install and operations command recipes by scenario (dry-run, Clash compatibility, custom ports, usage cards, pinned versions, unattended installs, dual-node, uninstall).
-- [Comparison](en/COMPARISON.md): Scores 3x-ui, x-ui, manual configs, and commercial services for the residential-IP self-hosted AnyReality / VLESS Reality scenario.
+- [Comparison](en/COMPARISON.md): Deployer/panel scoring vs 3x-ui, x-ui, manual configs, commercial services; protocol-layer “AnyReality is best for China now” lives in the [README scorecard](../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now).
 - [Deployment](en/DEPLOYMENT.md): Blank VPS to running AnyReality node (with the legacy `--protocol vless-vision` option), including one-line install, config files, verification, and uninstall.
 - [Dual-node smart routing](en/DUAL-NODE.md): Residential node + data-center fallback, with domain rules for OpenAI/Anthropic/Netflix vs Telegram/Discord.
 - [Subscription server design](en/SUBSCRIPTION.md): Leaf and aggregator HTTP servers, `Subscription-Userinfo`, `/healthz`, `/<TOKEN>/status`, and cache fallback.

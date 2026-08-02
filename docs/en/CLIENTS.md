@@ -1,6 +1,6 @@
 # Client import
 
-> **The default protocol is now AnyReality (AnyTLS + REALITY).** The installer defaults to `--protocol anytls-reality`; the old VLESS + Reality + xtls-rprx-vision is now a legacy option, `--protocol vless-vision`. The trade-off: AnyReality resists detection better (AnyTLS custom padding makes TLS-in-TLS harder to target, and Reality adds server-side camouflage), but only sing-box-family clients support it; vless-vision is slightly weaker on detection resistance but works with Clash-family clients. Neither needs a domain or certificate.
+> **The default protocol is now AnyReality (AnyTLS + REALITY).** The installer defaults to `--protocol anytls-reality`; the old VLESS + Reality + xtls-rprx-vision is now a legacy option, `--protocol vless-vision`. On this repository’s scorecard **AnyReality is the best overall pick for China-region self-hosting right now** (China-facing VLESS Reality has stagnated). Trade-off: AnyReality is the fuller anti-detection stack (padding + REALITY camouflage) but sing-box-family only; vless-vision is a **Clash compatibility fallback**, not a better protocol. Neither needs a domain or certificate. Full argument: [README protocol scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now).
 
 After install, the server prints a subscription URL (if you used `--with-subscription`), or — only under legacy `vless-vision` — a `vless://` link.
 

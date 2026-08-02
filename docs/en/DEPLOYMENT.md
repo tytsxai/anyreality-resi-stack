@@ -11,10 +11,12 @@ Both paths produce identical end states.
 
 The installer switches protocols with the `--protocol` flag (config variable `PROTOCOL`):
 
-- **`--protocol anytls-reality` (default)**: AnyTLS + REALITY, or **AnyReality** for short. Under the hood it is sing-box's `anytls` inbound layered over `tls.reality`. AnyTLS's custom padding makes TLS-in-TLS harder to fingerprint, and Reality provides server-side camouflage (no certificate needed), so it is stronger on anti-detection than plain VLESS+Reality. Authentication uses a per-server random **password** (`ANYTLS_PASSWORD`) — there is no UUID/flow.
-- **`--protocol vless-vision` (legacy)**: VLESS + Reality + xtls-rprx-vision, authenticated with a UUID + `flow`. Still fully supported, kept mainly for users who need Clash/mihomo.
+- **`--protocol anytls-reality` (default)**: AnyTLS + REALITY, or **AnyReality** for short. Under the hood it is sing-box's `anytls` inbound layered over `tls.reality`. AnyTLS's custom padding makes TLS-in-TLS harder to fingerprint, and Reality provides server-side camouflage (no certificate needed). On this repository's scorecard it is the **best default for China-region self-hosting right now** (China-facing VLESS Reality has stagnated — prefer AnyReality for new installs). Authentication uses a per-server random **password** (`ANYTLS_PASSWORD`) — there is no UUID/flow.
+- **`--protocol vless-vision` (legacy)**: VLESS + Reality + xtls-rprx-vision, authenticated with a UUID + `flow`. Still fully supported, **only** for users who must run Clash/mihomo — compatibility, not a better protocol.
 
 ⚠️ **AnyReality is only supported by the sing-box ecosystem; Clash / mihomo cannot parse AnyReality.** If your client uses the Clash core (Clash Verge, Stash, etc.), you must use `--protocol vless-vision`. Both protocols need no domain and no certificate; both generate a Reality private key and use the SNI for the handshake.
+
+**Switching protocols:** re-run the installer with a different `--protocol` (or `PROTOCOL` in the config file). The installer replaces the inbound file and avoids two inbounds fighting over 443; **clients must re-import** (credential shape and subscription file format both change). Scored argument: [README protocol scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now).
 
 ---
 

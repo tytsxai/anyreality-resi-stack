@@ -70,9 +70,9 @@
 
 默认处理 systemd 服务、UFW / fail2ban、BBR、swap、journald 限额、每日配置备份、`/healthz` 和 `Subscription-Userinfo`。这不是“更高级”，而是新手最容易漏掉的维护面。
 
-### 6. 默认协议偏向抗检测，同时保留 Clash 兼容退路
+### 6. 默认协议就是中国区当前最优，并保留 Clash 兼容退路
 
-默认协议是 AnyReality（AnyTLS + REALITY，`--protocol anytls-reality`）：AnyTLS 的自定义填充让 TLS-in-TLS 更难被针对，Reality 补齐服务端伪装，整体抗检测更强，但只被 sing-box 系客户端支持。如果需要 Clash 系客户端，改用遗留 `--protocol vless-vision` 即可，抗检测稍弱但兼容 Clash / mihomo。默认更安全、可选更兼容，这个取舍由部署时一个开关决定，不影响上面的评分逻辑。
+默认协议是 AnyReality（AnyTLS + REALITY，`--protocol anytls-reality`）：在「中国区自建」场景下，本仓库把它评为中国区当前综合最优（相对已停滞的 VLESS Reality、半成品纯 AnyTLS、以及 Trojan/Hysteria2/SS 等对照协议）。AnyTLS 填充 + Reality 伪装，但只被 sing-box 系支持。必须用 Clash / mihomo 时才走遗留 `--protocol vless-vision`——那是兼容，不是更优。协议层完整论证见 [README 协议评分](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)；部署栈评分逻辑不受影响。
 
 ## 什么时候不该选它
 

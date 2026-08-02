@@ -9,7 +9,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **README protocol scorecard reframed as China-region best-pick argument**: bilingual side-by-side protocol scores (AnyReality first) with explicit “why best for China now” criteria; stagnant VLESS path demoted; upstream-tracking commitment; separate from deployer/panel comparison.
+- **README protocol scorecard (China-region best-pick)**: bilingual side-by-side scores with decision tree, explicit weights (last reviewed 2026-08), client matrix, migration steps, boundaries, and upstream-tracking commitment; VLESS path marked stagnant; FAQ/DEPLOYMENT/COMPARISON/llms.txt aligned.
 
 ## [2.1.0] — 2026-07-28
 

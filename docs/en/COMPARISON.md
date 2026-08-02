@@ -70,9 +70,9 @@ The installer supports `--dry-run`, `--config`, `--non-interactive`, and idempot
 
 The stack handles systemd services, UFW / fail2ban, BBR, swap, journald limits, daily config backups, `/healthz`, and `Subscription-Userinfo`. These are not flashy features; they are the maintenance pieces beginners usually miss.
 
-### 6. The default protocol favors anti-detection, with a Clash-compatible fallback
+### 6. The default protocol is the China-region best pick, with a Clash-compatible fallback
 
-The default protocol is AnyReality (AnyTLS + REALITY, `--protocol anytls-reality`): AnyTLS's custom padding makes TLS-in-TLS harder to target, and Reality adds server-side camouflage, so it resists detection better — but only sing-box-family clients support it. If you need Clash-family clients, switch to the legacy `--protocol vless-vision`, which is slightly weaker on detection resistance but works with Clash / mihomo. Stronger by default, more compatible when needed — the trade-off is a single install-time switch and does not change the scoring logic above.
+The default protocol is AnyReality (AnyTLS + REALITY, `--protocol anytls-reality`). For China-region self-hosting this repository scores it as the best overall default versus stagnant VLESS Reality, incomplete bare AnyTLS, and Trojan / Hysteria2 / SS peers. AnyTLS padding + Reality camouflage, sing-box clients only. Use legacy `--protocol vless-vision` only when Clash / mihomo is mandatory — compatibility, not a better protocol. Full protocol argument: [README scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now). Deployer scoring above is unchanged.
 
 ## When not to choose it
 

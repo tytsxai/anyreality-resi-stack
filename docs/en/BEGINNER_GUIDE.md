@@ -100,9 +100,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
   --with-subscription
 ```
 
-The default install is **AnyReality (AnyTLS + REALITY)** — no extra flag needed. AnyReality authenticates with a password (`ANYTLS_PASSWORD`, stored in `/etc/anyreality-resi-stack/secrets.env`); there is no UUID or flow, and it still needs no domain or certificate.
+The default install is **AnyReality (AnyTLS + REALITY)** — no extra flag needed. It is this repository’s **recommended default for China-region self-hosting** (versus the stagnant VLESS Reality path); see the [README protocol scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now). AnyReality authenticates with a password (`ANYTLS_PASSWORD`, stored in `/etc/anyreality-resi-stack/secrets.env`); there is no UUID or flow, and it still needs no domain or certificate.
 
-If your client is **Clash-based** (Clash Verge Rev, etc.), note that Clash/mihomo **does not support AnyReality**. Reinstall with the legacy protocol by adding `--protocol vless-vision`:
+If your client is **Clash-based** (Clash Verge Rev, etc.), note that Clash/mihomo **does not support AnyReality** — that is a compatibility fallback, not a better protocol. Reinstall with the legacy protocol by adding `--protocol vless-vision`:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \

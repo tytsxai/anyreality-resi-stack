@@ -1,6 +1,6 @@
 # 客户端导入 | Client import
 
-> **默认协议已切换为 AnyReality（AnyTLS + REALITY）。** 安装器默认 `--protocol anytls-reality`；旧的 VLESS + Reality + xtls-rprx-vision 变成遗留可选项 `--protocol vless-vision`。两者的取舍：AnyReality 抗检测更强（AnyTLS 自定义填充让 TLS-in-TLS 更难被针对，Reality 补齐服务端伪装），但只被 sing-box 系客户端支持；vless-vision 抗检测稍弱，但兼容 Clash 系客户端。两者都无需域名/证书。
+> **默认协议已切换为 AnyReality（AnyTLS + REALITY）。** 安装器默认 `--protocol anytls-reality`；旧的 VLESS + Reality + xtls-rprx-vision 变成遗留可选项 `--protocol vless-vision`。按本仓库评分，**AnyReality 是当前中国区自建综合最优**（VLESS Reality 中国区已停滞）；取舍是：AnyReality 抗检测更完整（填充 + REALITY 伪装），但只被 sing-box 系支持；vless-vision 是 **Clash 兼容退路**，不是更优协议。两者都无需域名/证书。完整论证：[README 协议评分](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。
 
 安装完成后，服务器会给你一个订阅 URL（如果启用了 `--with-subscription`），或者——仅在遗留 `vless-vision` 下——一个 `vless://` 链接。
 

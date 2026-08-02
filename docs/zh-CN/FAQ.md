@@ -43,14 +43,21 @@ English edition: [docs/en/FAQ.md](../en/FAQ.md)。README 里的精简 FAQ 见 [R
 
 ### 默认协议是什么？AnyReality 和 VLESS+Reality 怎么选？
 
-默认是 **AnyReality（AnyTLS + REALITY）**。AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 负责服务端伪装，抗检测更强 —— 但**只有 sing-box 生态支持**。如果你的客户端是 Clash 系，必须改用遗留的 `--protocol vless-vision`：
+默认是 **AnyReality（AnyTLS + REALITY）**。按本仓库的量化对比，这是**当前中国区自建的综合最优协议**（自定义填充 + REALITY 伪装 + 中国区仍在演进；而 VLESS + REALITY 中国区路线已基本停滞）。AnyTLS 压 TLS-in-TLS 特征，Reality 做服务端伪装 —— 但**只有 sing-box 生态支持**。
+
+**怎么选（决策树）：**
+
+1. 能用 sing-box 系客户端 → **直接默认 AnyReality**（推荐）。
+2. 必须用 Clash / mihomo → 暂时 `--protocol vless-vision`（兼容退路，不是更优协议）；有机会再迁回 AnyReality。
+3. 正在用纯 AnyTLS → 升级为 AnyReality，不要裸跑。
 
 ```bash
+# 仅当必须兼容 Clash / mihomo 时
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" --protocol vless-vision --with-subscription
 ```
 
-两者都不需要域名和证书。
+两者都不需要域名和证书。完整打分与论证见 [README · 为什么是中国区当前最优](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。从 VLESS 迁到 AnyReality 需重跑安装器并**重新导入客户端**（密码认证替代 UUID/flow，订阅从 `profile.yaml` 变为 `profile.json`）。
 
 ### 哪些客户端支持 AnyReality？
 

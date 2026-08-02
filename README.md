@@ -121,6 +121,23 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 > **中国区用户 · 自建 / 机场节点 · 要抗检测 · 尽量少域名证书运维 · 能跟上游演进**。
 >
 > **上游跟进承诺**：下表不是写死的广告文案。协议生态、检测形势、客户端支持会变——我们会**按 [sing-box](https://sing-box.sagernet.org/) / AnyTLS / REALITY 及同类协议上游变更及时改分、改默认、改推荐**；安装器跟踪官方 apt 源，本表与 [Changelog](CHANGELOG.md) 随 release 同步。若某天有更强组合出现，会直接改默认，而不是死守旧叙事。
+>
+> **评分口径**（最近复核：2026-08）：产品判断，不是实验室基准、也不是“保证不被检测”。加权近似：抗检测 20% · 免域名伪装 20% · **中国区是否还在演进 20%** · 落地成本 10% · 历史稳定性 10% · 客户端广度 10% · 少运维自建契合 10%。权重刻意抬高「中国区演进」，所以「曾经生态第一但已停滞」会明显掉分。
+
+### 30 秒决策树
+
+```text
+能用 sing-box 系客户端？
+  ├─ 是 → 直接 AnyReality（本仓库默认）     ← 中国区当前最优
+  └─ 否，必须 Clash / mihomo？
+        └─ 暂时 --protocol vless-vision（兼容退路，不是更优协议）
+              有机会换客户端时再迁回 AnyReality
+
+已在用纯 AnyTLS？ → 补上 REALITY，上 AnyReality，不要裸跑
+已在用 VLESS+REALITY（中国区）？ → 能换客户端就迁 AnyReality；不能换再暂留
+弱网高丢包、要吃满 UDP 带宽？ → 可并行考虑 Hysteria2（赛道不同，不替代本方案）
+已有完整域名+证书+反代？ → Trojan/TLS 仍可用，但运维更重，一般不优于 AnyReality
+```
 
 ### 为什么说「中国区当前最优」
 
@@ -128,11 +145,11 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 |---|---|
 | 抗检测完整度 | AnyTLS 自定义填充压 TLS-in-TLS 特征，REALITY 补服务器指纹伪装——**填充 + 伪装都有**，比「只有 Reality」或「只有填充」更完整 |
 | 无需域名证书 | 和经典 Reality 一样，不买域名、不续证书、不养真站，中国区自建落地成本最低档之一 |
-| 中国区演进 | 原「大多数人首选」的 **VLESS + REALITY + XHTTP/Vision 在中国区已停滞**；继续押旧路线等于站在不再更新的技术债上 |
+| 中国区演进 | 原「大多数人首选」的 **VLESS + REALITY + XHTTP/Vision 在中国区已停滞**（社区/教程/面板默认路径不再推进该组合的新能力）；继续押旧路线 = 技术债 |
 | 可迁移路径清晰 | 从停滞的 VLESS Reality、从纯 AnyTLS，**都应该直接迁到 AnyReality**，而不是两边凑合 |
-| 本仓库落地 | 一键装、订阅、分流、双节点都按 AnyReality 默认打通；选它不是空推荐，是**默认就能用** |
+| 本仓库落地 | 一键装、订阅（`profile.json`）、分流、双节点都按 AnyReality 默认打通；选它不是空推荐，是**默认就能用** |
 
-唯一明显短板：**客户端主要在 sing-box 系**（官方 App / Karing / Hiddify 等），**mihomo / 多数 Clash 系暂不支持**。若你被客户端锁死，才退回遗留 VLESS Vision——那是兼容妥协，不是更优协议。
+**唯一结构性短板**：客户端主要在 **sing-box 系**（官方 App / Karing / Hiddify / NekoBox 等），**mihomo / 多数 Clash 系暂不支持**。被客户端锁死 → 用遗留 VLESS Vision 是**兼容妥协**，不是协议更优。
 
 ### 总分（中国区自建场景 · 协议横向）
 
@@ -145,19 +162,31 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 | Trojan / 传统 TLS | 2.8 | 老牌备选 | 强依赖域名 + 证书 + 真站/反代；运维面大，无 REALITY 级借指纹 |
 | Shadowsocks 2022 | 2.6 | 低审查 / 内网 | 部署极简，**TLS 层伪装与抗主动探测明显弱** |
 
+未单独打分但常被问起的：`VMess`（旧特征多，中国区新装不推荐）、`NaiveProxy`（伪装好但依赖域名/反代与较重栈）、`TUIC` / 纯 QUIC 变体（与 Hysteria2 同属 UDP 赛道，不作 REALITY 替代）。它们不进入上表主对比，避免稀释「中国区自建默认该选谁」。
+
 ### 维度评分（越高越适合中国区自建）
 
-| 维度（权重直觉） | **AnyReality** | VLESS+R+XHTTP/Vision | Hysteria2 | 纯 AnyTLS | Trojan/TLS | SS2022 |
+| 维度（权重） | **AnyReality** | VLESS+R+XHTTP/Vision | Hysteria2 | 纯 AnyTLS | Trojan/TLS | SS2022 |
 |---|---:|---:|---:|---:|---:|---:|
-| 抗检测 / 流量特征 | **5** | 4 | 3 | 3 | 3 | 2 |
-| 服务端伪装 / 免自备域名证书 | **5** | **5** | 2 | 2 | 1 | 1 |
-| **中国区活跃度 / 是否还在演进** | **5** | **2（停滞）** | 4 | 4 | 2 | 3 |
-| 配置与落地成本 | 4 | 3 | 3 | 4 | 2 | **5** |
-| 长期稳定性（历史实测） | 4 | **5** | 4 | 3 | 4 | 4 |
-| 客户端生态广度 | 3 | **5** | 4 | 3 | **5** | **5** |
-| 与「少运维自建」契合 | **5** | 3 | 3 | 2 | 2 | 2 |
+| 抗检测 / 流量特征（20%） | **5** | 4 | 3 | 3 | 3 | 2 |
+| 服务端伪装 / 免自备域名证书（20%） | **5** | **5** | 2 | 2 | 1 | 1 |
+| **中国区活跃度 / 是否还在演进（20%）** | **5** | **2（停滞）** | 4 | 4 | 2 | 3 |
+| 配置与落地成本（10%） | 4 | 3 | 3 | 4 | 2 | **5** |
+| 长期稳定性 · 历史实测（10%） | 4 | **5** | 4 | 3 | 4 | 4 |
+| 客户端生态广度（10%） | 3 | **5** | 4 | 3 | **5** | **5** |
+| 与「少运维自建」契合（10%） | **5** | 3 | 3 | 2 | 2 | 2 |
 
-读表方式：VLESS Reality 在「生态 / 历史稳定性」仍能打，但在**中国区是否还在演进**上已经掉队——这是「曾经最优 ≠ 现在最优」的关键分差。AnyReality 用**填充 + REALITY 伪装 + 仍在演进**三项把总分拉到第一。
+读表：VLESS Reality 在「生态 / 历史稳定性」仍能打，但在**中国区是否还在演进**上掉队——这是「曾经最优 ≠ 现在最优」的关键分差。AnyReality 用**填充 + REALITY 伪装 + 仍在演进**把总分拉到第一。
+
+### 客户端支持（和分数直接相关的短板）
+
+| 客户端 | AnyReality | 遗留 VLESS+Vision | 说明 |
+|---|:---:|:---:|---|
+| sing-box 官方 App（SFA/SFI/SFM）、Karing、Hiddify、NekoBox | ✅ | ✅ | **推荐路径**；默认订阅 `profile.json` |
+| Clash Verge / mihomo / Stash 等 | ❌ | ✅ | 必须 `--protocol vless-vision`，订阅变 `profile.yaml` |
+| 仅支持 `vless://` 的旧客户端 | ❌ | 视实现 | 不要硬上 AnyReality |
+
+导入步骤见 [客户端导入](docs/zh-CN/CLIENTS.md)。
 
 ### 重点协议说明
 
@@ -166,12 +195,12 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 - **优点**：自定义填充让 TLS-in-TLS 更难被针对；REALITY 补齐服务器伪装（无需域名证书）；sing-box 实现灵活，抓包侧伪装优秀。
 - **缺点**：相对经典 Reality 仍较新；**mihomo 不支持**；生态主要在 sing-box。
 - **适用**：**新装默认就选这个**；原 VLESS 中国区用户、纯 AnyTLS 用户，能换客户端就直接迁过来。
-- **本仓库**：默认 `--protocol anytls-reality`（可省略）。
+- **本仓库**：默认 `--protocol anytls-reality`（可省略）；认证字段是 `ANYTLS_PASSWORD`（密码），**没有** UUID / flow。
 
 #### VLESS + REALITY + XHTTP / Vision — 中国区已停滞（不是现在的最优）
 
 - **优点**：REALITY 无需域名证书、服务器指纹消除顶级；XHTTP / Vision 优化特征与性能；生态最成熟；实测长期稳定——**这些曾经支撑它成为「大多数人首选」**。
-- **缺点**：dest 要选好；Xray / sing-box 有差异；**中国区上游与社区演进已基本停滞** → 今天再当默认 = 押停更方案。
+- **缺点**：dest 要选好（TLS 1.3 / H2 等）；Xray / sing-box 有细微差异；**中国区上游与社区演进已基本停滞** → 今天再当默认 = 押停更方案。
 - **适用**：客户端只剩 Clash / mihomo；或既有节点短期维持。
 - **本仓库**：`--protocol vless-vision`（legacy 兼容，**不是推荐首选**）。
 
@@ -179,7 +208,7 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 
 有填充、无 REALITY 伪装。**AnyTLS 用户的更强选择就是 AnyReality**，不要停在纯 AnyTLS。
 
-#### 其他协议（对照，不是竞争对手里的「更优解」）
+#### 其他协议（对照，不是「更优默认」）
 
 | 协议 | 仍可考虑的窄场景 | 相对 AnyReality |
 |---|---|---|
@@ -187,20 +216,37 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 | Trojan / 传统 TLS | 已有完整域名证书反代 | 运维更重，无借指纹 |
 | Shadowsocks 2022 | 内网 / 极低审查 | 抗探测与伪装弱一档 |
 
+### 从旧协议迁到 AnyReality（本仓库）
+
+1. 客户端换成 sing-box 系（见上表）。
+2. 在服务器**重跑安装器**（默认同 AnyReality；或显式 `--protocol anytls-reality`）。安装器会换入站模板、必要时补 `ANYTLS_PASSWORD`，并避免双入站抢 443。
+3. **客户端必须重新导入**订阅：认证从 UUID/flow 变成密码，默认 profile 从 `profile.yaml` 变成 `profile.json`。
+4. 验证：`curl -x socks5h://127.0.0.1:2080 https://api.ipify.org` 应返回节点出口 IP。
+
+详情：[部署指南 · 协议选择](docs/zh-CN/DEPLOYMENT.md#协议选择anyreality默认vs-vless-vision遗留) · [故障排查](docs/zh-CN/TROUBLESHOOTING.md)。
+
+### 边界（避免过度承诺）
+
+- 评分是**场景化产品判断**，不是吞吐量压测、也不是对抗审查的法律/合规保证。
+- 「最优」指：**中国区自建默认该押哪条协议路线**；弱网 UDP、已有重 TLS 反代、必须用 Clash 等窄场景可以另选，见决策树。
+- 本项目**不承诺**绕过任何账号风控、地区政策或协议检测；只负责把自有 VPS 配成可维护出口。
+
 ### 和本仓库的关系
 
-- **协议层最优**：AnyReality（上表）。
-- **部署层落地**：`anyreality-resi-stack` 把该协议做成一键安装 + 订阅 + 分流（住宅 IP 场景额外加分）。
-- 要比面板 / 安装器（本仓库 vs 3x-ui / x-ui），见 [同类评分对比](docs/zh-CN/COMPARISON.md)。
+| 层级 | 结论 |
+|---|---|
+| **协议层** | AnyReality = 中国区当前最优（上表） |
+| **部署层** | `anyreality-resi-stack` 把该协议做成一键安装 + 订阅 + 分流；住宅 IP 双节点是额外场景加分 |
+| **工具层** | 和 3x-ui / x-ui / 手写配置比，见 [同类评分对比](docs/zh-CN/COMPARISON.md) |
 
 ## 适用与不适用 | Fit and limits
 
 **适合 / Good fit**
 
 - 自己拥有住宅 IP VPS，希望把住宅出口用于 OpenAI、ChatGPT、Claude、银行、流媒体等重视 IP 信誉的场景。
-- 已有一台住宅 VPS 和一台普通数据中心 VPS，想通过 Clash 规则把 Telegram / Discord 流量旁路到备用节点。
-- 不想维护 3x-ui / x-ui 这类面板，只需要单用户、可审计、可重复部署的 AnyReality / VLESS Reality 节点。
-- 希望订阅 URL 能在 v2rayN、Clash Verge、Stash、Shadowrocket 等客户端中同步配置并显示用量。
+- 已有一台住宅 VPS 和一台普通数据中心 VPS，想用域名分流把 Telegram / Discord 旁路到数据中心节点（默认 AnyReality 下为 sing-box `route` 规则）。
+- 不想维护 3x-ui / x-ui 这类面板，只需要单用户、可审计、可重复部署的 AnyReality 节点（Clash 用户可用遗留 VLESS Vision）。
+- 希望订阅 URL 在 sing-box 系（默认）或 Clash 系（legacy）客户端里同步配置并显示用量。
 
 **不适合 / Not a fit**
 

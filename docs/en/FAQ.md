@@ -43,14 +43,21 @@ An Ubuntu 22.04+ / 24.04 LTS or Debian 12+ VPS, root or sudo, SSH access, and a 
 
 ### What is the default protocol, and how do I choose between AnyReality and VLESS+Reality?
 
-The default is **AnyReality (AnyTLS + REALITY)**. AnyTLS custom padding makes TLS-in-TLS harder to fingerprint and Reality supplies server-side camouflage, so detection resistance is better — but **only the sing-box ecosystem supports it**. If your clients are Clash-family, use the legacy protocol instead:
+The default is **AnyReality (AnyTLS + REALITY)**. On this repository's scorecard it is the **best overall protocol for China-region self-hosting right now** (custom padding + REALITY camouflage + still evolving; the China-facing VLESS + REALITY path has largely stagnated). AnyTLS hardens TLS-in-TLS fingerprints and Reality covers the server side — but **only the sing-box ecosystem supports it**.
+
+**Decision tree:**
+
+1. You can use a sing-box-family client → **stay on default AnyReality** (recommended).
+2. You must use Clash / mihomo → temporary `--protocol vless-vision` (compatibility, not a better protocol); migrate back when you can.
+3. You run bare AnyTLS today → upgrade to AnyReality; do not run padding without REALITY.
 
 ```bash
+# Only when Clash / mihomo is mandatory
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" --protocol vless-vision --with-subscription
 ```
 
-Neither requires a domain or a certificate.
+Neither requires a domain or a certificate. Full scores: [README protocol scorecard](../../README.en.md#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now). Migrating from VLESS requires re-running the installer and **re-importing clients** (password auth replaces UUID/flow; subscription becomes `profile.json` instead of `profile.yaml`).
 
 ### Which clients support AnyReality?
 

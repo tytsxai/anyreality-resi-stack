@@ -11,10 +11,12 @@
 
 安装器用 `--protocol` 开关（配置变量 `PROTOCOL`）在两种协议之间切换：
 
-- **`--protocol anytls-reality`（默认）**：AnyTLS + REALITY，简称 **AnyReality**。底层是 sing-box 的 `anytls` 入站叠加 `tls.reality`。AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 提供服务端伪装（无需证书），在抗检测维度上比纯 VLESS+Reality 更强。认证用每台服务器随机生成的**密码**（`ANYTLS_PASSWORD`），没有 UUID/flow。
-- **`--protocol vless-vision`（遗留）**：VLESS + Reality + xtls-rprx-vision，用 UUID + `flow` 认证。仍完整支持，主要留给需要 Clash/mihomo 的用户。
+- **`--protocol anytls-reality`（默认）**：AnyTLS + REALITY，简称 **AnyReality**。底层是 sing-box 的 `anytls` 入站叠加 `tls.reality`。AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 提供服务端伪装（无需证书）。按本仓库评分，这是**当前中国区自建的综合最优默认**（VLESS Reality 中国区已停滞，新装应优先 AnyReality）。认证用每台服务器随机生成的**密码**（`ANYTLS_PASSWORD`），没有 UUID/flow。
+- **`--protocol vless-vision`（遗留）**：VLESS + Reality + xtls-rprx-vision，用 UUID + `flow` 认证。仍完整支持，**仅**留给必须用 Clash/mihomo 的用户——是兼容退路，不是更优协议。
 
 ⚠️ **AnyReality 只有 sing-box 生态支持，Clash / mihomo 无法解析 AnyReality。** 如果你的客户端是 Clash Verge / Stash 等 Clash 内核，必须改用 `--protocol vless-vision`。两种协议都无需域名和证书，服务器都会生成 Reality 私钥并用 SNI 做握手。
+
+**切换协议**：重跑安装器并改 `--protocol`（或配置文件里的 `PROTOCOL`）。安装器会替换入站文件、避免双入站抢 443；**客户端必须重新导入**（凭据形态与订阅文件格式都会变）。量化论证见 [README · 协议评分](../../README.md#与其他协议的量化评分对比--为什么是中国区当前最优)。
 
 ---
 
