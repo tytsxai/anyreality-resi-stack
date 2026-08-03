@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] — 2026-08-03
+
+> **Documentation release.** No installer, protocol, or runtime behavior changes. Existing nodes do not need reinstall or client re-import.
+
 ### Changed
 
 - **README protocol scorecard (China-region best-pick)**: bilingual side-by-side scores with decision tree, explicit weights (last reviewed 2026-08), client matrix, migration steps, boundaries, and upstream-tracking commitment; VLESS path marked stagnant; FAQ/DEPLOYMENT/COMPARISON/llms.txt aligned.
