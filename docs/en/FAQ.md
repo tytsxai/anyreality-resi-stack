@@ -1,8 +1,8 @@
 # FAQ | anyreality-resi-stack
 
-The questions people actually ask about `anyreality-resi-stack` — the self-hosted sing-box AnyReality (AnyTLS + Reality) stack for residential-IP VPS hosts. Every answer gives a runnable command where one exists and links to the deeper document.
+**In one line:** open-source toolkit that deploys **sing-box AnyReality (AnyTLS+REALITY, default)** on a VPS you own via `install/install.sh`, with optional legacy VLESS+Vision, Python subscription servers, and dual-node routing — not an IP vendor or multi-user panel.
 
-中文版: [docs/zh-CN/FAQ.md](../zh-CN/FAQ.md). The condensed FAQ also lives in [README.en.md](../../README.en.md#faq).
+Runnable commands preferred. 中文版: [docs/zh-CN/FAQ.md](../zh-CN/FAQ.md). Landing FAQ: [README.en.md](../../README.en.md#faq).
 
 - [What this project is](#what-this-project-is)
 - [Protocols and clients](#protocols-and-clients)

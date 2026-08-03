@@ -1,8 +1,8 @@
 # 命令示例 | Usage examples
 
-按场景整理的 `anyreality-resi-stack` 安装与运维命令配方。每条都对应 [`install/install.sh`](../../install/install.sh) 真实存在的参数，可以直接复制。
+`anyreality-resi-stack` 的可复制安装/运维配方（Quick Start 之外的场景）。每条参数均对应真实入口 [`install/install.sh`](../../install/install.sh)。
 
-English edition: [docs/en/EXAMPLES.md](../en/EXAMPLES.md)。参数完整清单见 [DEPLOYMENT.md](DEPLOYMENT.md#2-变量表)，或在服务器上跑 `bash install/install.sh --help`。
+English: [docs/en/EXAMPLES.md](../en/EXAMPLES.md)。变量表：[DEPLOYMENT.md](DEPLOYMENT.md#2-变量表)；或 `bash install/install.sh --help`。
 
 > 下文为了不刷屏，部分命令把安装入口缩写成 `bash <(curl -fsSL .../install.sh)`。实际执行时请用完整地址：
 > `https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh`，

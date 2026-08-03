@@ -1,9 +1,10 @@
-# anyreality-resi-stack — Residential-IP AnyReality (AnyTLS + Reality) stack for sing-box
+# anyreality-resi-stack
 
-> Self-hosted proxy deployment toolkit: one Bash command installs **sing-box + AnyTLS + REALITY
-> (AnyReality, default)** — or legacy **VLESS + Reality + xtls-rprx-vision** — on an Ubuntu/Debian
-> VPS, with an optional zero-dependency Python subscription server, usage-card headers, and
-> dual-node smart routing.
+**Self-hosted residential-IP AnyReality (AnyTLS + Reality) stack for sing-box**
+
+`anyreality-resi-stack` (formerly `reality-resi-stack`) is an open-source (GPL-3.0), auditable **Bash one-line installer** that deploys **sing-box + AnyTLS + REALITY (AnyReality, default)** on **Ubuntu 22.04+ / Debian 12+** VPS hosts — with optional legacy **VLESS + Reality + xtls-rprx-vision**, a zero-dependency Python subscription server, usage cards, and dual-node domain routing. Entry point: [`install/install.sh`](install/install.sh).
+
+It is **not** a residential-IP vendor, multi-user panel, or commercial proxy marketplace. You bring the VPS; this repo configures it.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-orange.svg)](docs/en/DEPLOYMENT.md)
@@ -11,201 +12,97 @@
 [![AnyReality](https://img.shields.io/badge/protocol-AnyTLS%2BReality-green.svg)](docs/en/DEPLOYMENT.md)
 [![Release](https://img.shields.io/github/v/release/tytsxai/anyreality-resi-stack)](https://github.com/tytsxai/anyreality-resi-stack/releases)
 
-[简体中文 README](README.md) · [Beginner guide](docs/en/BEGINNER_GUIDE.md) · [Usage examples](docs/en/EXAMPLES.md) · [FAQ](docs/en/FAQ.md) · [Deployment](docs/en/DEPLOYMENT.md) · [Routing rules](docs/en/ROUTING.md) · [Comparison](docs/en/COMPARISON.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
+[简体中文 README](README.md) · [Beginner guide](docs/en/BEGINNER_GUIDE.md) · [Examples](docs/en/EXAMPLES.md) · [FAQ](docs/en/FAQ.md) · [Deployment](docs/en/DEPLOYMENT.md) · [Clients](docs/en/CLIENTS.md) · [Routing](docs/en/ROUTING.md) · [Comparison](docs/en/COMPARISON.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md)
 
-> This is the English edition. The [Simplified Chinese README](README.md) is the authoritative
-> document and is updated first; every guide under `docs/en/` mirrors its `docs/zh-CN/` counterpart.
+> English edition. The [Chinese README](README.md) is authoritative and updated first; `docs/en/` mirrors `docs/zh-CN/`.
 
-## 30-second fit check
+## What / why / who
 
-- **China protocol takeaway** — **AnyTLS + REALITY (AnyReality) is the best overall pick for
-  China-region self-hosting right now** (China-facing VLESS Reality has stagnated). Scored argument:
-  [protocol scorecard](#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now).
-- **What it is** — an open-source, auditable, repeatable **sing-box AnyReality (AnyTLS + Reality)
-  installer**. The entry point is `install/install.sh`. Legacy VLESS + Reality is still selectable.
-- **Problem solved** — turns a VPS you already own (especially a residential-IP VPS) into a proxy
-  node your clients can import, and optionally uses dual-node rules to work around the soft
-  throttling Telegram and Discord apply to some residential subnets.
-- **Who it is for** — individual developers, small teams, AI-tool users, and multi-device users who
-  own a VPS, are comfortable with SSH, and want to avoid maintaining a web panel.
-- **What it is not** — not a residential-IP provider, not a proxy-selling panel, not a multi-user
-  billing system, and it makes no promise about bypassing any service's account risk controls or
-  regional policy.
-- **Two things to know first** — ① the client profile it hands out **ships complete routing rules**
-  (China-direct, ad-block, LAN-direct), so TUN mode works on import
-  ([routing rules](docs/en/ROUTING.md)); ② the subscription server runs on **plain HTTP :80** and
-  the profile contains your node password, so **the subscription URL is a credential — never share
-  it** ([SECURITY.md](SECURITY.md#subscription-url-exposure--订阅地址的暴露面)).
-
-## Project summary
-
-| Field | Answer |
+| | |
 | --- | --- |
-| Project type | Open-source self-hosted proxy deployment stack; not a proxy-selling panel, does not sell IPs |
-| Core use | Deploy sing-box AnyReality (AnyTLS+Reality, default) or legacy VLESS+Reality nodes on residential or regular VPS hosts, and generate importable client subscription profiles |
-| Problem solved | Residential egress is valuable for OpenAI, Anthropic, banking, and streaming, while Telegram/Discord may downrank some residential subnets; this project routes traffic by domain to the better exit |
-| Who it is for | Developers, small teams, AI-tool users, and multi-device users who own VPS servers and prefer simple auditable automation |
-| Tech stack | Bash installer, sing-box, AnyTLS, Reality, VLESS, xtls-rprx-vision, Python stdlib HTTP server, systemd, UFW, fail2ban, sing-box JSON / Clash YAML |
-| Supported OS | Ubuntu 22.04+ / 24.04 LTS, Debian 12+ |
-| License | GPL-3.0 |
-| Former name | `tytsxai/reality-resi-stack` (v1.x; old links redirect here) |
-| Runtime services | `sing-box`, `subscription-leaf`, `subscription-aggregator`, `config-backup.timer` |
-| Main config paths | `/etc/sing-box/conf`, `/etc/anyreality-resi-stack/`, `/var/lib/anyreality-resi-stack/` (v2.0 unified the prefix; the installer migrates v1.x paths and units in place without losing keys, state, or backups) |
+| **What** | Self-hosted proxy **deployment stack**: installer + sing-box templates + Python subscription servers + docs |
+| **Problem** | Configure your residential or DC VPS as an importable node; optional dual-node sends OpenAI-class traffic via residential egress and Telegram/Discord via a DC fallback |
+| **Who** | People who own a VPS, use SSH, and prefer Bash+systemd over a web panel |
+| **Default protocol** | **AnyReality (AnyTLS+REALITY)** — recommended default for China-region self-hosting; see [scorecard](#protocol-scorecard--why-anyreality-is-the-china-region-best-pick-now) |
+| **Stack** | Bash, sing-box, AnyTLS, REALITY, VLESS/Vision (legacy), Python stdlib HTTP, systemd, UFW, fail2ban |
+| **OS** | Ubuntu 22.04+ / 24.04 LTS, Debian 12+ |
+| **Paths** | `install/install.sh`; runtime `/etc/sing-box/conf`, `/etc/anyreality-resi-stack/` |
 
-## Why this exists
-
-Most VLESS installers (XHTTP-Installer, 3x-ui, x-ui, …) target the *cheap-VPS-bypass-censorship*
-use case. They assume your server IP is disposable and the more you hide it, the better.
-
-**A premium residential-IP VPS is the opposite trade-off.** You bought it precisely *because*
-services that reward "real-home-user" reputation — OpenAI, Anthropic, banking, Netflix — treat
-residential egress better than data-center egress. But the same residential subnet often gets
-soft-throttled by messengers (Telegram, Discord) when a neighbor on the same /24 was previously
-flagged. The symptom: stalled file uploads, dropped voice frames, a sticky "sending…".
-
-`anyreality-resi-stack` assumes your residential IP is an asset worth defending — and that the few
-services hostile to it should be routed *around* the asset rather than dragging it down.
+**Two things first:** ① client profiles ship China-direct / ad-block / LAN-direct rules for TUN ([routing](docs/en/ROUTING.md)); ② subscription is **plain HTTP :80** and contains the node password — **the URL is a credential** ([SECURITY.md](SECURITY.md#subscription-url-exposure--订阅地址的暴露面)).
 
 ## Quick start
 
 ```bash
+# Preview only
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --node-name "US-Resi-01" --sni addons.mozilla.org --with-subscription --dry-run
+
+# Install (default AnyReality)
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
 ```
 
-On Ubuntu 22.04+ / Debian 12+ this single command performs: system tuning (BBR / swap / journald
-limits) → sing-box install (official apt repo with a pinned GPG fingerprint) → UUID, Reality keypair
-and AnyTLS password generation → **AnyReality (AnyTLS + Reality) inbound configuration** (default;
-pass `--protocol vless-vision` for legacy VLESS+Reality) → systemd service enablement → UFW +
-fail2ban → subscription server with usage card → daily systemd-timer config backup → end-to-end
-self-check.
+What it does: preflight + BBR/swap → sing-box from official apt (GPG-pinned) → Reality keys + AnyTLS password → AnyReality inbound on `:443` → systemd / UFW / fail2ban → optional subscription + daily backup → self-check. Clash/mihomo: add `--protocol vless-vision`.
 
-The quick-start command tracks `main`. For repeatable installs, pin a branch or tag with
-`ANYREALITY_RESI_STACK_REF=<tag-or-branch>`; for automation use `--config FILE --non-interactive`;
-to preview without changing anything use `--dry-run`.
+| Need | How |
+| --- | --- |
+| Pin version | `ANYREALITY_RESI_STACK_REF=<tag>` |
+| Unattended | `--config FILE --non-interactive` |
+| First time | [Beginner guide](docs/en/BEGINNER_GUIDE.md) |
+| More recipes | [Examples](docs/en/EXAMPLES.md) |
 
-First deployment? Read the [beginner guide](docs/en/BEGINNER_GUIDE.md) — it is ordered as
-"checks before buying a VPS → SSH → dry-run → real install → client import → verify egress".
-
-For a dual-node deployment with smart routing, add
-`--with-aggregator http://<leaf>/<token>/status` plus the residential-node variables documented in
-[docs/en/DUAL-NODE.md](docs/en/DUAL-NODE.md).
-
-## After install: 3 steps to go live
-
-The installer prints a completion card with node name / protocol / IP / port / SNI, the
-**AnyReality client credentials** (or a `vless://` link in legacy mode), and — when the subscription
-server is enabled — a subscription URL `http://<your-ip>/<SUB_TOKEN>`.
-
-**1. Get the config** — pick one:
-
-```text
-# Option A (recommended): subscription URL — clients auto-sync and show the usage card
-#   AnyReality (default) -> import with a sing-box client: sing-box official apps (SFA/SFI/SFM), Karing, Hiddify
-#   Legacy vless-vision  -> import with a Clash client: Clash Verge, mihomo, Stash
-http://<your-ip>/<SUB_TOKEN>/
-
-# Option B: manual. Full client-config samples (placeholder values, do not use as-is):
-examples/single-node/sing-box-client-config.json      # single-node AnyReality
-examples/dual-node/sing-box-client-dual.json          # dual-node AnyReality + domain routing
-examples/single-node/vless-link.txt                   # legacy vless:// share link
-```
-
-**2. Import into a client** — see [client import](docs/en/CLIENTS.md). Manual AnyReality fields:
-`type=anytls`, `server`, `port`, `password`, `tls.server_name=<SNI>`, `utls fingerprint=chrome`,
-`reality public_key` + `short_id`.
-
-**3. Verify egress** — the imported sing-box client opens a local mixed proxy on `127.0.0.1:2080`;
-use it to confirm the exit really is your residential IP:
+Import the completion-card subscription URL with a **sing-box client** (SFA/SFI/SFM, Karing, Hiddify, NekoBox), then:
 
 ```bash
-# Client side: should print your VPS residential IP
 curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
-
-# Server side health checks
-curl -fsS http://<your-ip>/healthz          # subscription liveness
-systemctl status sing-box --no-pager        # node service status
+curl -fsS http://<your-ip>/healthz
+systemctl status sing-box --no-pager
 ```
-
-Wrong exit IP, client cannot connect, Telegram still slow? See
-[troubleshooting](docs/en/TROUBLESHOOTING.md).
-
-## Architecture
-
-### Single-node (default)
-
-```mermaid
-flowchart LR
-    Client["📱 Client<br/>sing-box · Karing · Hiddify<br/>(Clash Verge for legacy)"]
-    Resi["🏠 Residential VPS<br/>sing-box (AnyTLS+Reality)<br/>:443"]
-    Internet["🌍 Internet"]
-    Client -->|"AnyReality (AnyTLS+Reality)<br/>or legacy VLESS+Vision"| Resi
-    Resi -->|"direct egress<br/>(residential IP visible to upstream)"| Internet
-```
-
-### Dual-node with smart routing
-
-```mermaid
-flowchart LR
-    Client["📱 Client<br/>+ domain routing rules"]
-    Resi["🏠 Residential VPS<br/>sing-box :443<br/>Leaf subscription :80"]
-    DC["🏢 Data-center VPS<br/>sing-box :443<br/>Aggregator subscription :80"]
-    OpenAI["OpenAI · Anthropic<br/>Netflix · Banking"]
-    TG["Telegram · Discord"]
-    Other["Other internet"]
-    Client -->|"OpenAI/Anthropic/Netflix domains"| Resi
-    Client -->|"Telegram/Discord domains"| DC
-    Client -->|"default"| Resi
-    Resi --> OpenAI
-    Resi --> Other
-    DC --> TG
-    DC -.->|"polls /status"| Resi
-```
-
-The client downloads a *single* subscription URL from the aggregator. That URL returns a profile
-listing **both** nodes plus the routing rules — a full sing-box config (`profile.json`) by default
-with AnyReality, or a Clash profile (`profile.yaml`) under legacy `--protocol vless-vision`. Traffic
-accounting still reflects the residential node's quota: the aggregator polls the leaf and caches the
-result, degrading gracefully if the leaf is briefly unreachable.
 
 ## Core features
 
-- **One-line install** — `install/install.sh` handles preflight checks, sing-box installation,
-  Reality key generation, config rendering, systemd units, UFW / fail2ban, the backup timer, and a
-  self-check.
-- **AnyTLS + REALITY (AnyReality, default)** — listens on `443/tcp`, needs no domain and no TLS
-  certificate. AnyTLS custom padding makes TLS-in-TLS harder to fingerprint; Reality supplies the
-  server-side camouflage. Stronger against detection, but sing-box ecosystem only.
-- **VLESS + Reality + xtls-rprx-vision (legacy, optional)** — switch with `--protocol vless-vision`.
-  The most mature ecosystem and the one Clash / mihomo clients support.
-- **Subscription server** — `subscription/leaf_server.py` uses only the Python standard library and
-  serves `/<TOKEN>/`, `/<TOKEN>/status`, and `/healthz`, sampling interface counters in the
-  background and returning a `Subscription-Userinfo` header so clients render a usage card.
-- **Routing that works out of the box** — the client profile ships four rule layers: LAN-direct,
-  ad-block, **China domain/IP direct (inline safety net plus `geosite-cn` / `geoip-cn`)**, and QUIC
-  blocking. Import and go in TUN mode. See [routing rules](docs/en/ROUTING.md).
-- **Dual-node smart routing** — residential node carries OpenAI / Anthropic / Netflix; data-center
-  node carries Telegram / Discord and anything else hostile to residential subnets.
-- **Operability** — `--dry-run`, `--non-interactive`, `--config`, idempotent re-runs, daily config
-  backups, log size limits, BBR, swap, health checks.
-- **Safety boundaries** — every server generates its own UUID / Reality key / subscription token;
-  the repository ships a redaction scanner and a hash-only denylist so real credentials cannot be
-  committed.
+- One-line install: `install/install.sh` (`--dry-run` / `--non-interactive` / `--config` / idempotent)
+- AnyReality default: AnyTLS padding + REALITY camouflage, **no domain/cert**; sing-box clients only
+- Legacy VLESS+Vision: `--protocol vless-vision` for Clash/mihomo (compatibility, not preferred)
+- Subscription: `subscription/leaf_server.py`, `/<TOKEN>/`, `/status`, `/healthz`, usage card
+- Ready-made routing: LAN direct → ad block → China direct → reject UDP/443 → proxy
+- Dual-node: residential for OpenAI/Anthropic/Netflix; DC for Telegram/Discord ([DUAL-NODE](docs/en/DUAL-NODE.md))
+- Ops defaults: systemd, UFW, fail2ban, BBR, swap, backup timer, health checks
+- Safety: per-host secrets; redact + hash denylist in CI
 
-## Which tool should I use?
+## Use cases
 
 | Scenario | Recommendation |
 | --- | --- |
-| One VPS, want a personal AnyReality / VLESS Reality node quickly | `anyreality-resi-stack` |
-| Residential IP mainly for OpenAI / Claude / Netflix, but Telegram / Discord are painful | `anyreality-resi-stack` dual-node mode |
-| Need multiple users, expiry dates, traffic quotas, a web panel, and an admin API | 3x-ui / x-ui fits better |
-| Just learning the underlying Xray / sing-box configuration | Hand-written configs or the official docs |
-| Do not want to run a server at all, just buy ready-made nodes | A commercial proxy service |
+| Residential VPS for ChatGPT / Claude / banking / streaming reputation | This stack, single node + subscription |
+| Residential works for AI but TG/Discord uploads stall | [Dual-node](docs/en/DUAL-NODE.md) |
+| Single-user, no panel, auditable | This stack |
+| Multi-user billing / web admin API | 3x-ui / x-ui |
+| Must use Clash/mihomo | `--protocol vless-vision` or switch clients and use AnyReality |
 
-A scored comparison for the specific "self-hosted residential-IP AnyReality, beginner-viable, low
-maintenance" scenario lives in [comparison](docs/en/COMPARISON.md).
+Deployer comparison: [COMPARISON](docs/en/COMPARISON.md). Protocol comparison: next section.
+
+## Limits
+
+- Does **not** sell VPS/IPs; no multi-user billing, airport panel, K8s/Docker-only/OpenWRT/CentOS 7
+- Does **not** claim to bypass account risk controls, regional policy, or protocol blocking
+- AnyReality **unsupported** by mihomo/most Clash; **never share** the subscription URL
+- Former name `reality-resi-stack` (v1.x) redirects here; runtime prefix is `anyreality-resi-stack`
+
+**Suggested GitHub About:** `Self-hosted residential-IP AnyReality (AnyTLS+Reality) stack for sing-box — Bash installer, Python subscription, dual-node routing.`  
+**Suggested topics:** `sing-box` `anytls` `anyreality` `reality` `vless` `residential-ip` `proxy` `self-hosted` `subscription-server` `ubuntu` `debian` `systemd` `openai` `telegram`
+
+AI summary: [llms.txt](llms.txt) · Docs index: [docs/README.md](docs/README.md)
+
+## Why this exists
+
+Most VLESS installers target cheap-VPS bypass. **Residential VPS is the opposite:** you paid for egress reputation (OpenAI, banking, Netflix), yet the same subnet may be soft-throttled by Telegram or Discord. This project treats the residential IP as an asset and routes hostile services around it. Dual-node steps: [DUAL-NODE.md](docs/en/DUAL-NODE.md).
+
+## After install
+
+Completion card: node info, AnyReality credentials (or legacy `vless://`), subscription `http://<IP>/<SUB_TOKEN>/`. Prefer the subscription (sing-box `profile.json`); samples under `examples/`. Manual fields and clients: [CLIENTS.md](docs/en/CLIENTS.md). Verify with the `curl` commands above. Troubleshooting: [TROUBLESHOOTING.md](docs/en/TROUBLESHOOTING.md).
 
 ## Protocol scorecard | Why AnyReality is the China-region best pick *now*
 
@@ -333,26 +230,44 @@ Details: [deployment · protocol choice](docs/en/DEPLOYMENT.md#protocol-choice-a
 | **Deployment** | `anyreality-resi-stack` ships it as one-line install + subscription + routing; residential dual-node is an extra scenario win |
 | **Tooling** | vs 3x-ui / x-ui / manual config: [comparison](docs/en/COMPARISON.md) |
 
-## Fit and limits
+## Architecture
 
-**Good fit**
+### Single-node (default)
 
-- You own a residential-IP VPS and want that exit used for OpenAI, ChatGPT, Claude, banking, and
-  streaming — services that care about IP reputation.
-- You already have one residential VPS and one regular data-center VPS and want domain rules to
-  divert Telegram / Discord traffic to the backup node.
-- You do not want to maintain a 3x-ui / x-ui style panel and only need a single-user, auditable,
-  repeatably deployable node.
-- You want the subscription URL to sync configuration and display usage in v2rayN, Clash Verge,
-  Stash, Shadowrocket, and similar clients.
+```mermaid
+flowchart LR
+    Client["📱 Client<br/>sing-box · Karing · Hiddify<br/>(Clash Verge for legacy)"]
+    Resi["🏠 Residential VPS<br/>sing-box (AnyTLS+Reality)<br/>:443"]
+    Internet["🌍 Internet"]
+    Client -->|"AnyReality (AnyTLS+Reality)<br/>or legacy VLESS+Vision"| Resi
+    Resi -->|"direct egress<br/>(residential IP visible to upstream)"| Internet
+```
 
-**Not a fit**
+### Dual-node with smart routing
 
-- This project provides no residential IPs and no server resources — bring your own VPS.
-- No multi-user panel, billing system, commercial proxy management, or enterprise multi-tenancy.
-- No support for CentOS 7, Alpine, OpenWRT, Docker-only, or Kubernetes deployments.
-- No promise of bypassing any service's account risk controls, regional policy, or protocol
-  detection. It only configures your own server into a working proxy exit.
+```mermaid
+flowchart LR
+    Client["📱 Client<br/>+ domain routing rules"]
+    Resi["🏠 Residential VPS<br/>sing-box :443<br/>Leaf subscription :80"]
+    DC["🏢 Data-center VPS<br/>sing-box :443<br/>Aggregator subscription :80"]
+    OpenAI["OpenAI · Anthropic<br/>Netflix · Banking"]
+    TG["Telegram · Discord"]
+    Other["Other internet"]
+    Client -->|"OpenAI/Anthropic/Netflix domains"| Resi
+    Client -->|"Telegram/Discord domains"| DC
+    Client -->|"default"| Resi
+    Resi --> OpenAI
+    Resi --> Other
+    DC --> TG
+    DC -.->|"polls /status"| Resi
+```
+
+The client downloads a *single* subscription URL from the aggregator. That URL returns a profile
+listing **both** nodes plus the routing rules — a full sing-box config (`profile.json`) by default
+with AnyReality, or a Clash profile (`profile.yaml`) under legacy `--protocol vless-vision`. Traffic
+accounting still reflects the residential node's quota: the aggregator polls the leaf and caches the
+result, degrading gracefully if the leaf is briefly unreachable.
+
 
 ## Security
 

@@ -1,5 +1,22 @@
 # anyreality-resi-stack
 
+## Entity card (for search engines and AI retrieval)
+
+| Field | Value |
+| --- | --- |
+| Name | anyreality-resi-stack |
+| Former name | reality-resi-stack (v1.x; GitHub redirects) |
+| Type | Open-source self-hosted proxy **deployment stack** (not a panel, not an IP vendor) |
+| Repository | https://github.com/tytsxai/anyreality-resi-stack |
+| License | GPL-3.0 |
+| Default protocol | AnyReality = AnyTLS + REALITY (`--protocol anytls-reality`) |
+| Legacy protocol | VLESS + Reality + xtls-rprx-vision (`--protocol vless-vision`, Clash/mihomo only) |
+| Runtime | sing-box on Ubuntu 22.04+/24.04 or Debian 12+ |
+| Install entrypoint | `install/install.sh` |
+| Optional components | Python stdlib subscription leaf/aggregator, usage cards, dual-node domain routing |
+| Config paths | `/etc/sing-box/conf`, `/etc/anyreality-resi-stack/`, `/var/lib/anyreality-resi-stack/` |
+| Authoritative docs | README.md (zh-first), README.en.md, docs/, llms.txt |
+
 ## One-sentence description
 
 anyreality-resi-stack is a GPL-3.0 self-hosted AnyReality (AnyTLS+Reality, default) / VLESS Reality deployment stack for sing-box that installs a residential-IP-friendly proxy node on Ubuntu/Debian and optionally serves client subscriptions with usage cards and dual-node smart routing.
@@ -14,7 +31,7 @@ anyreality-resi-stack is a GPL-3.0 self-hosted AnyReality (AnyTLS+Reality, defau
 - Protocol selection: `--protocol anytls-reality` (default) or `--protocol vless-vision` (legacy). AnyReality authenticates with a per-server password (ANYTLS_PASSWORD), needs no domain/cert, and is sing-box-only (Clash/mihomo cannot parse it).
 - Supported server OS: Ubuntu 22.04+ / 24.04 LTS and Debian 12+.
 - License: GPL-3.0.
-- Short GitHub About description: Self-hosted residential-IP AnyReality (AnyTLS+Reality) / VLESS Reality stack for sing-box with Bash installer, Python subscription server, usage cards, and dual-node smart routing.
+- Short GitHub About description: Self-hosted residential-IP AnyReality (AnyTLS+Reality) stack for sing-box — Bash installer, Python subscription, dual-node routing.
 
 ## 中文摘要
 

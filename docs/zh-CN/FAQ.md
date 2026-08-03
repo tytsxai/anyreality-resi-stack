@@ -1,8 +1,8 @@
 # 常见问题 FAQ | anyreality-resi-stack
 
-关于 `anyreality-resi-stack`（sing-box AnyReality / AnyTLS + Reality 住宅 IP 自托管部署栈）最常被问到的问题。每个答案都尽量给出可以直接执行的命令，并指向对应的深入文档。
+**一句话**：`anyreality-resi-stack` 是在你自有 Ubuntu/Debian VPS 上用 `install/install.sh` 部署 **sing-box AnyReality（AnyTLS+REALITY，默认）** 的开源自托管工具包；可选遗留 VLESS+Vision、Python 订阅与双节点分流。不是卖 IP、不是机场面板。
 
-English edition: [docs/en/FAQ.md](../en/FAQ.md)。README 里的精简 FAQ 见 [README.md](../../README.md#-faq)。
+每个答案尽量给出可执行命令，并指向深入文档。English: [docs/en/FAQ.md](../en/FAQ.md)。README 精简 FAQ：[README.md](../../README.md#-faq)。
 
 - [项目定位](#项目定位)
 - [协议与客户端](#协议与客户端)

@@ -1,7 +1,7 @@
 [project]
 name = "anyreality-resi-stack-subscription"
 version = "2.1.0"
-description = "Zero-dependency Python subscription leaf and aggregator HTTP servers for the anyreality-resi-stack sing-box AnyReality (AnyTLS+Reality) / VLESS Reality deployment toolkit."
+description = "Zero-dependency Python HTTP subscription leaf/aggregator for anyreality-resi-stack: serves sing-box AnyReality (AnyTLS+Reality) or legacy VLESS Reality client profiles with usage cards on Ubuntu/Debian VPS hosts."
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "GPL-3.0-only" }

@@ -1,117 +1,101 @@
-# anyreality-resi-stack — Residential-IP AnyReality (AnyTLS + Reality) stack for sing-box
+# anyreality-resi-stack
 
-> **住宅 IP AnyReality（AnyTLS + Reality）部署栈 / Residential-IP AnyReality stack for sing-box**
->
-> `anyreality-resi-stack`（前身 `reality-resi-stack`）是一个面向个人和小团队的自托管代理部署工具包：用一条 Bash 安装命令在 Ubuntu / Debian VPS 上部署 **sing-box + AnyTLS + REALITY（AnyReality，默认）**，也可选旧的 **VLESS + Reality + xtls-rprx-vision**（legacy），并可选启用零依赖 Python 订阅服务、流量卡片和双节点智能分流。
->
-> `anyreality-resi-stack` (formerly `reality-resi-stack`) is a self-hosted proxy deployment toolkit for individuals and small teams. It installs **sing-box + AnyTLS + REALITY (AnyReality, default)** — with legacy **VLESS + Reality + xtls-rprx-vision** still available — on Ubuntu/Debian VPS hosts, plus an optional zero-dependency Python subscription server, usage-card headers, and dual-node smart routing.
+**住宅 IP 优先的 sing-box AnyReality（AnyTLS + REALITY）自托管部署栈**  
+**Self-hosted residential-IP AnyReality (AnyTLS + Reality) stack for sing-box**
+
+`anyreality-resi-stack`（前身 `reality-resi-stack`）是一个开源（GPL-3.0）、可审计的 **Bash 一键安装工具包**：在 **Ubuntu 22.04+ / Debian 12+** VPS 上部署 **sing-box + AnyTLS + REALITY（AnyReality，默认）**，也可选遗留 **VLESS + Reality + xtls-rprx-vision**；可选启用零依赖 Python 订阅服务、流量卡片与双节点域名分流。入口：[`install/install.sh`](install/install.sh)。
+
+It is **not** a residential-IP vendor, multi-user panel, or commercial airport. You bring your own VPS; this repo configures it.
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-orange.svg)](docs/en/DEPLOYMENT.md)
 [![sing-box](https://img.shields.io/badge/core-sing--box-purple.svg)](https://sing-box.sagernet.org)
 [![AnyReality](https://img.shields.io/badge/protocol-AnyTLS%2BReality-green.svg)](docs/en/DEPLOYMENT.md)
 [![Release](https://img.shields.io/github/v/release/tytsxai/anyreality-resi-stack)](https://github.com/tytsxai/anyreality-resi-stack/releases)
-[![GitHub stars](https://img.shields.io/github/stars/tytsxai/anyreality-resi-stack?style=social)](https://github.com/tytsxai/anyreality-resi-stack/stargazers)
 
-[English README](README.en.md) · [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [命令示例](docs/zh-CN/EXAMPLES.md) · [常见问题 FAQ](docs/zh-CN/FAQ.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类评分对比](docs/zh-CN/COMPARISON.md) · [Docs (中文)](docs/zh-CN/DEPLOYMENT.md) · [Docs (English)](docs/en/DEPLOYMENT.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/anyreality-resi-stack/issues)
-
-> **Search keywords / 搜索关键词**: AnyReality, AnyTLS Reality, sing-box AnyTLS Reality installer, AnyReality 一键脚本, AnyReality 住宅 IP, residential IP VLESS, VLESS Reality residential proxy, sing-box residential installer, VLESS+Reality 一键脚本, OpenAI 住宅 IP 代理, ChatGPT 住宅 IP 出口, Telegram 住宅 IP 上传慢, Discord 住宅 IP 降权, Clash 域名分流, 双节点智能分流, alternative to 3x-ui for residential VPS
+[English README](README.en.md) · [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) · [命令示例](docs/zh-CN/EXAMPLES.md) · [FAQ](docs/zh-CN/FAQ.md) · [部署](docs/zh-CN/DEPLOYMENT.md) · [客户端](docs/zh-CN/CLIENTS.md) · [分流规则](docs/zh-CN/ROUTING.md) · [同类对比](docs/zh-CN/COMPARISON.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md)
 
 ---
 
-## 30 秒判断 | 30-second fit
+## 项目定位 | What / why / who
 
-- **中国区协议结论 / China protocol takeaway**: **AnyTLS + REALITY（AnyReality）= 当前中国区自建综合最优**（VLESS Reality 中国区已停滞）。量化论证见 [与其他协议的评分对比](#与其他协议的量化评分对比--为什么是中国区当前最优)。
-- **它是什么 / What it is**: 一个开源、可审计、可重复部署的 **sing-box AnyReality (AnyTLS + Reality) installer**（默认协议，遗留 VLESS+Reality 仍可选），核心入口是 `install/install.sh`。
-- **解决什么问题 / Problem solved**: 把你自己的住宅 IP VPS 或普通 VPS 配成可导入客户端的代理节点，并在需要时用双节点规则缓解 Telegram / Discord 对部分住宅 IP 段的软降权。
-- **适合谁 / For whom**: 有自有 VPS、会 SSH、希望少维护 Web 面板的个人开发者、小团队、AI 工具用户和跨设备代理用户。
-- **不是什么 / Not**: 不是住宅 IP 供应商、不是机场面板、不是多用户计费系统，也不承诺绕过账号风控或地区政策。
-- **先知道的两件事 / Two things to know first**: ① 下发的客户端配置**自带国内直连、广告拦截等完整分流规则**，TUN 模式导入即用（[分流规则](docs/zh-CN/ROUTING.md)）；② 订阅服务跑在**明文 HTTP :80**，配置里含节点密码，**订阅 URL 等同于凭证，不要外传**（[SECURITY.md](SECURITY.md#subscription-url-exposure--订阅地址的暴露面)）。
+| | 中文 | English |
+|---|---|---|
+| **是什么** | 自托管代理**部署栈**：安装器 + sing-box 模板 + Python 订阅服务 + 文档 | Self-hosted proxy **deployment stack**: installer, sing-box templates, Python subscription servers, docs |
+| **解决什么** | 把自有住宅/普通 VPS 配成可导入客户端的节点；可选双节点把 OpenAI 等走住宅、Telegram/Discord 走数据中心 | Turn your VPS into an importable node; optional dual-node routes OpenAI-class traffic via residential egress and TG/Discord via DC |
+| **适合谁** | 有 VPS、会 SSH、不想养 Web 面板的个人/小团队/AI 工具用户 | Owners of a VPS who prefer Bash+systemd over a panel |
+| **默认协议** | **AnyReality（AnyTLS+REALITY）** — 中国区自建场景下本仓库的推荐默认；论证见 [协议评分](#与其他协议的量化评分对比--为什么是中国区当前最优) | **AnyReality** default; legacy VLESS+Vision for Clash/mihomo only |
+| **技术栈** | Bash, sing-box, AnyTLS, REALITY, VLESS/Vision(legacy), Python stdlib HTTP, systemd, UFW, fail2ban | same |
+| **系统** | Ubuntu 22.04+/24.04, Debian 12+ | same |
+| **入口路径** | `install/install.sh`；运行时 `/etc/sing-box/conf`, `/etc/anyreality-resi-stack/` | same |
 
-**最小安装命令 / Minimal install command**
+**先知道的两件事：** ① 客户端配置自带国内直连/广告拦截等规则，TUN 导入即用（[分流规则](docs/zh-CN/ROUTING.md)）；② 订阅默认 **明文 HTTP :80**，URL 含节点密码，**等同凭证，勿外传**（[SECURITY.md](SECURITY.md#subscription-url-exposure--订阅地址的暴露面)）。
+
+## 快速开始 | Quick start
 
 ```bash
+# 建议先 dry-run 预览（不改系统）
+bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
+  --node-name "US-Resi-01" --sni addons.mozilla.org --with-subscription --dry-run
+
+# 确认无误后去掉 --dry-run 正式安装（默认 AnyReality）
 bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
   --node-name "US-Resi-01" \
   --sni addons.mozilla.org \
   --with-subscription
 ```
 
-第一次部署建议先读 [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) / [Beginner guide](docs/en/BEGINNER_GUIDE.md)。需要可重复部署时，用 `ANYREALITY_RESI_STACK_REF=<tag-or-branch>` 固定版本；自动化环境用 `--config FILE --non-interactive`。
+安装器会：预检与 BBR/swap → 官方 apt 源装 sing-box（GPG 校验）→ 生成 Reality 密钥与 AnyTLS 密码 → 写 AnyReality 入站（`:443`）→ systemd / UFW / fail2ban → 可选订阅与每日备份 → 自检。Clash 系客户端请加 `--protocol vless-vision`。
 
-## 项目速览 | Project summary
-
-| 维度 | 中文 | English |
-|---|---|---|
-| 项目类型 | 开源自托管代理部署栈，不是机场面板，不出售 IP | Open-source self-hosted proxy deployment stack; not a proxy-selling panel |
-| 核心用途 | 在住宅 IP VPS 或普通 VPS 上部署 sing-box AnyReality（AnyTLS+Reality，默认）或遗留 VLESS+Reality 节点，并生成可导入客户端的订阅配置 | Deploy sing-box AnyReality (AnyTLS+Reality, default) or legacy VLESS+Reality nodes and client subscription profiles on residential or regular VPS hosts |
-| 解决的问题 | 住宅 IP 对 OpenAI / Anthropic / 银行 / Netflix 有价值，但 Telegram / Discord 等服务可能对住宅 IP 段软降权；本项目用域名规则把不同流量送到更合适的出口 | Residential egress can be valuable for OpenAI, Anthropic, banking, and streaming, while Telegram/Discord may downrank some residential subnets; this project routes traffic by domain to better exits |
-| 适合谁 | 有自有 VPS、懂基本 SSH、希望少依赖面板的个人开发者、小团队、AI 工具用户、跨设备代理用户 | Developers, small teams, AI-tool users, and multi-device users who own VPS servers and prefer simple auditable automation |
-| 技术栈 | Bash installer, sing-box, AnyTLS, Reality, VLESS, xtls-rprx-vision, Python 标准库 HTTP server, systemd, UFW, fail2ban, sing-box JSON / Clash YAML | Bash installer, sing-box, AnyTLS, Reality, VLESS, xtls-rprx-vision, Python stdlib HTTP server, systemd, UFW, fail2ban, sing-box JSON / Clash YAML |
-| 支持系统 | Ubuntu 22.04+ / 24.04 LTS, Debian 12+ | Ubuntu 22.04+ / 24.04 LTS, Debian 12+ |
-| 开源协议 | GPL-3.0 | GPL-3.0 |
-
-## 仓库元信息 | Repository metadata
-
-| 字段 | 值 |
+| 需求 | 做法 |
 |---|---|
-| GitHub repository | `tytsxai/anyreality-resi-stack` |
-| Former name / 前身 | `tytsxai/reality-resi-stack`（v1.x；旧链接会自动跳转到新仓库） |
-| Primary installer | `install/install.sh` |
-| Python package metadata | `subscription/pyproject.toml` |
-| Runtime services | `sing-box`, `subscription-leaf`, `subscription-aggregator`, `config-backup.timer` |
-| Main config paths | `/etc/sing-box/conf`, `/etc/anyreality-resi-stack/`, `/var/lib/anyreality-resi-stack/`（v2.0 起运行时路径、systemd 单元、备份脚本/归档统一为 `anyreality-resi-stack` 前缀；安装器会自动迁移 v1.x 的 `reality-resi-stack` 目录与单元，就地升级不丢密钥/状态/备份） |
-| AI summary source | [`llms.txt`](llms.txt), [`docs/README.md`](docs/README.md) |
-| Suggested GitHub About description | `Self-hosted residential-IP AnyReality (AnyTLS+Reality) / VLESS Reality stack for sing-box with Bash installer, Python subscription server, usage cards, and dual-node smart routing.` |
-| Suggested GitHub Topics | `sing-box`, `anytls`, `anyreality`, `vless`, `reality`, `xtls`, `residential-ip`, `proxy`, `self-hosted`, `clash`, `subscription-server`, `v2rayn`, `telegram`, `openai`, `anthropic`, `ubuntu`, `debian`, `systemd` |
+| 固定版本可重复部署 | `ANYREALITY_RESI_STACK_REF=<tag>` |
+| 无人值守 | `--config FILE --non-interactive` |
+| 第一次部署 | [新手教程](docs/zh-CN/BEGINNER_GUIDE.md) / [Beginner guide](docs/en/BEGINNER_GUIDE.md) |
+| 更多命令 | [命令示例](docs/zh-CN/EXAMPLES.md) |
+
+装完用完成卡上的订阅 URL（`http://<IP>/<TOKEN>/`）导入 **sing-box 系客户端**（SFA/SFI/SFM、Karing、Hiddify、NekoBox），再验证：
+
+```bash
+curl -x socks5h://127.0.0.1:2080 https://api.ipify.org   # 客户端侧，应等于 VPS 出口
+curl -fsS http://<your-ip>/healthz                        # 订阅存活
+systemctl status sing-box --no-pager
+```
 
 ## 核心功能 | Core features
 
-- **一行安装 / One-line install**: `install/install.sh` 完成系统预检、sing-box 安装、Reality 密钥生成、配置渲染、systemd 服务、UFW / fail2ban、备份 timer 和自检。
-- **AnyTLS + REALITY（AnyReality，默认）**: 默认监听 `443/tcp`，无需域名和 TLS 证书；AnyTLS 的自定义填充让 TLS-in-TLS 更难被指纹识别，Reality 补齐服务端伪装。抗检测更强，仅 sing-box 生态支持。
-- **VLESS + Reality + xtls-rprx-vision（legacy 可选）**: 加 `--protocol vless-vision` 切换；生态最成熟、Clash/mihomo 兼容，**仅在必须用 Clash 客户端时**使用。中国区该路线已停滞，新装默认不要选它。
-- **订阅服务 / Subscription server**: `subscription/leaf_server.py` 用 Python 标准库提供 `/<TOKEN>/`、`/<TOKEN>/status`、`/healthz`，后台采样网卡用量，并通过 `Subscription-Userinfo` 响应头给客户端显示流量卡片。
-- **开箱即用的分流规则 / Routing that works out of the box**: 下发的客户端配置自带四层规则 —— 内网直连、广告拦截、**国内域名/IP 直连（内联安全网 + `geosite-cn` / `geoip-cn` 双保险）**、QUIC 拦截，TUN 模式下导入即用，不需要手动配规则。详见 [分流规则](docs/zh-CN/ROUTING.md) / [Routing rules](docs/en/ROUTING.md)。
-- **双节点智能分流 / Dual-node smart routing**: 可用住宅节点承载 OpenAI / Anthropic / Netflix 等流量，用数据中心节点承载 Telegram / Discord 等对住宅 IP 不友好的流量。
-- **可运维性 / Operability**: 支持 `--dry-run`、`--non-interactive`、`--config`、幂等重跑、每日配置备份、日志限额、BBR、swap、健康检查。
-- **安全边界 / Safety boundaries**: 每台服务器生成独立 UUID / Reality key / subscription token；仓库带脱敏扫描和哈希 denylist，避免把真实凭证提交到 Git。
+- **一行安装**：`install/install.sh`（`--dry-run` / `--non-interactive` / `--config` / 幂等重跑）
+- **AnyReality 默认**：AnyTLS 自定义填充 + REALITY 服务端伪装，**无需域名/证书**；仅 sing-box 生态
+- **遗留 VLESS+Vision**：`--protocol vless-vision`，兼容 Clash/mihomo（兼容退路，非推荐默认）
+- **订阅服务**：`subscription/leaf_server.py`（零依赖），`/<TOKEN>/`、`/status`、`/healthz`、`Subscription-Userinfo` 流量卡片
+- **开箱分流**：内网直连 → 广告拦截 → 国内直连（内联安全网 + geosite/geoip）→ 拦 UDP/443 → 其余走节点
+- **双节点**：住宅承载 OpenAI/Anthropic/Netflix 等；数据中心承载 Telegram/Discord（[DUAL-NODE](docs/zh-CN/DUAL-NODE.md)）
+- **运维默认**：systemd、UFW、fail2ban、BBR、swap、配置备份 timer、健康检查
+- **安全默认**：每机独立密钥；仓库 redact + hash denylist，禁止凭证入库
 
-## 新手从这里开始 | Start here
-
-如果你第一次部署 AnyReality / VLESS Reality，不需要先理解所有协议细节。按下面顺序走：
-
-1. 准备一台 Ubuntu 22.04+ / Debian 12+ VPS，确认能用 SSH 登录，并能开放 `443/tcp` 和可选的 `80/tcp`。
-2. 先看 [新手教程](docs/zh-CN/BEGINNER_GUIDE.md)，它按“买 VPS 前检查 → SSH → dry-run → 正式安装 → 客户端导入 → 验证出口”的顺序写。
-3. 只部署一台服务器时，直接用 `--with-subscription`；遇到 Telegram / Discord 上传慢，再看 [双节点智能分流](docs/zh-CN/DUAL-NODE.md)。
-4. 想知道国内网站为什么是直连的、怎么加自己的域名，看 [分流规则](docs/zh-CN/ROUTING.md)。
-5. 需要确认它和 3x-ui / x-ui / 手写配置怎么选，先看 [同类评分对比](docs/zh-CN/COMPARISON.md)。
-
-English: the full English edition of this page is [README.en.md](README.en.md). If this is your first AnyReality / VLESS Reality deployment, start with the [beginner guide](docs/en/BEGINNER_GUIDE.md), then use the one-line installer below. The [comparison page](docs/en/COMPARISON.md) explains when this stack is a better fit than 3x-ui, x-ui, manual configs, or commercial panels.
-
-## 为什么选它 | Why choose this stack
-
-`anyreality-resi-stack` 不追求做成大而全的机场面板。它把范围收窄到一个更实际的问题：**你已经有 VPS，尤其是住宅 IP VPS，想用最少依赖部署一个可审计、可重跑、可给客户端导入的 AnyReality / VLESS Reality 节点**。
-
-| 你关心的点 | 本项目怎么处理 |
-|---|---|
-| 小白能不能直接用 | 一行安装、dry-run、完成卡、订阅 URL、客户端导入教程 |
-| 住宅 IP 有没有被用好 | 默认把住宅出口用于 OpenAI / Anthropic / Netflix / banking 等 IP 信誉敏感场景 |
-| Telegram / Discord 慢怎么办 | 双节点模式内置 TG / Discord → 数据中心节点，OpenAI / Claude → 住宅节点 |
-| 会不会变成面板安全负担 | 无 Web 管理后台，默认单用户单节点，减少暴露面 |
-| 出问题能不能排查 | systemd 服务、`/healthz`、`Subscription-Userinfo`、日志命令、故障排查文档 |
-| 会不会把密钥提交出去 | 每台服务器本地生成密钥，仓库带 redact 扫描和 hash denylist |
-
-## 选型判断 | Which tool should I use?
+## 使用场景 | Use cases
 
 | 场景 | 推荐 |
 |---|---|
-| 一台 VPS，想快速部署自用 AnyReality / VLESS Reality | `anyreality-resi-stack` |
-| 住宅 IP 主要给 OpenAI / Claude / Netflix 用，但 TG / Discord 体验差 | `anyreality-resi-stack` 双节点模式 |
-| 需要多用户、到期时间、流量限额、Web 面板和管理员 API | 3x-ui / x-ui 更合适 |
-| 只是学习 Xray/sing-box 底层配置 | 手写配置或官方文档更合适 |
-| 不想自管服务器，只想购买现成节点 | 商业机场/代理服务更省事 |
+| 自有住宅 IP VPS，给 ChatGPT / Claude / 银行 / 流媒体用信誉出口 | 本项目单节点 + 订阅 |
+| 住宅 IP 好用但 Telegram/Discord 上传卡、语音差 | [双节点智能分流](docs/zh-CN/DUAL-NODE.md) |
+| 只要可审计、少暴露面的单用户节点，不要面板 | 本项目（无 Web 管理后台） |
+| 多用户计费、到期、Web 面板 | 3x-ui / x-ui 更合适 |
+| 必须 Clash/mihomo | `--protocol vless-vision`，或换 sing-box 客户端后上 AnyReality |
 
-在“住宅 IP 自托管 AnyReality / VLESS Reality + 新手可落地 + 低维护”这个具体场景下，本项目的综合评分和取舍见 [同类评分对比](docs/zh-CN/COMPARISON.md) / [comparison](docs/en/COMPARISON.md)。
+部署栈横向对比：[同类评分对比](docs/zh-CN/COMPARISON.md)。协议横向对比见下一节。
+
+## 限制与注意事项 | Limits
+
+- **不提供** VPS / 住宅 IP；**不做** 多用户计费、机场面板、K8s/Docker-only/OpenWRT/CentOS7
+- **不承诺** 绕过账号风控、地区政策或协议检测
+- AnyReality **不支持** mihomo/多数 Clash；订阅 URL **勿公开**
+- 前身仓库名 `reality-resi-stack`（v1.x）会跳转到本仓；运行时前缀已统一为 `anyreality-resi-stack`，就地升级不丢密钥
+
+**GitHub About 建议**：`Self-hosted residential-IP AnyReality (AnyTLS+Reality) stack for sing-box — Bash installer, Python subscription, dual-node routing.`  
+**Topics 建议**：`sing-box` `anytls` `anyreality` `reality` `vless` `residential-ip` `proxy` `self-hosted` `subscription-server` `ubuntu` `debian` `systemd` `openai` `telegram`
+
+AI 检索摘要：[llms.txt](llms.txt) · 文档索引：[docs/README.md](docs/README.md)
 
 ## 与其他协议的量化评分对比 | 为什么是中国区当前最优
 
@@ -239,93 +223,21 @@ English: the full English edition of this page is [README.en.md](README.en.md). 
 | **部署层** | `anyreality-resi-stack` 把该协议做成一键安装 + 订阅 + 分流；住宅 IP 双节点是额外场景加分 |
 | **工具层** | 和 3x-ui / x-ui / 手写配置比，见 [同类评分对比](docs/zh-CN/COMPARISON.md) |
 
-## 适用与不适用 | Fit and limits
+## 为什么需要这个项目 | Why this exists
 
-**适合 / Good fit**
+多数 VLESS 安装器（3x-ui、x-ui、XHTTP-Installer 等）面向「便宜 VPS + 隐藏出口」。**住宅 IP VPS 相反**：你付更高价格，是因为 OpenAI / Anthropic / 银行 / Netflix 等看重出口信誉；但同一住宅段常被 Telegram / Discord 软降权（上传卡住、「正在发送…」）。
 
-- 自己拥有住宅 IP VPS，希望把住宅出口用于 OpenAI、ChatGPT、Claude、银行、流媒体等重视 IP 信誉的场景。
-- 已有一台住宅 VPS 和一台普通数据中心 VPS，想用域名分流把 Telegram / Discord 旁路到数据中心节点（默认 AnyReality 下为 sing-box `route` 规则）。
-- 不想维护 3x-ui / x-ui 这类面板，只需要单用户、可审计、可重复部署的 AnyReality 节点（Clash 用户可用遗留 VLESS Vision）。
-- 希望订阅 URL 在 sing-box 系（默认）或 Clash 系（legacy）客户端里同步配置并显示用量。
+本项目的前提：**把住宅 IP 当资产**——信誉敏感流量走住宅，不友好的少数服务按域名旁路到数据中心备用节点。双节点变量与步骤见 [DUAL-NODE.md](docs/zh-CN/DUAL-NODE.md)。
 
-**不适合 / Not a fit**
+## 装完之后 | After install
 
-- 不提供住宅 IP 或服务器资源；你需要自己准备 VPS。
-- 不做多用户面板、计费系统、商用机场管理或企业级多租户隔离。
-- 不支持 CentOS 7、Alpine、OpenWRT、Docker-only 或 Kubernetes 部署。
-- 不承诺绕过任何服务的账号风控、地区政策或协议检测；它只负责把你自有服务器配置成可用的代理出口。
+完成卡会打印节点信息、AnyReality 凭据（或遗留 `vless://`）、以及订阅 `http://<IP>/<SUB_TOKEN>/`。
 
----
+1. **拿配置**：优先订阅 URL（默认返回 sing-box `profile.json`）；占位样例见 `examples/single-node/sing-box-client-config.json`、`examples/dual-node/sing-box-client-dual.json`。
+2. **导入客户端**：[CLIENTS.md](docs/zh-CN/CLIENTS.md)。手动字段：`type=anytls`、`server`、`port`、`password`、`tls.server_name`、`utls fingerprint=chrome`、`reality public_key` + `short_id`。
+3. **验证**：客户端 `curl -x socks5h://127.0.0.1:2080 https://api.ipify.org`；服务器 `curl -fsS http://<ip>/healthz`、`systemctl status sing-box`。
 
-## 🌍 Why this exists | 这个项目为什么存在
-
-**中文** —— 市面上大多数 VLESS 安装器（XHTTP-Installer、3x-ui、x-ui 等）服务的是"便宜 VPS 翻墙"场景；它们的设计假设是：服务器 IP 不值钱、出口 IP 越隐藏越好。
-
-但**住宅 IP VPS 反过来**：你之所以花更高价钱买它，正是因为 **OpenAI / Anthropic / 银行 / Netflix 等"看重出口 IP 信誉"的服务**会奖励住宅出口。然而**同一个住宅 IP 段**经常被 Telegram、Discord 等即时通讯类服务降权（因为该段曾被其他人跑过 bot），表现就是**文件上传卡死、语音通话掉帧、"正在发送..." 一直转**。
-
-`anyreality-resi-stack` 的设计前提：**把住宅 IP 当成资产用好，对它不友好的少数场景按域名旁路到备用节点**。
-
-**English** — Most VLESS installers (XHTTP-Installer, 3x-ui, x-ui, ...) target the *cheap-VPS-bypass-censorship* use case. They assume your server IP is disposable and the more you hide it, the better.
-
-**Premium residential-IP VPS is the opposite trade-off**: you bought it precisely *because* services that reward "real-home-user" reputation (OpenAI, Anthropic, banking, Netflix) treat residential egress better than data-center egress. But the same residential subnet often gets soft-throttled by messengers (Telegram, Discord) when a neighbor on the same /24 has previously been flagged. The symptom: stalled file uploads, dropped voice frames, sticky "sending…".
-
-`anyreality-resi-stack` is built on the assumption that your residential IP is an asset worth defending — and that the few services hostile to it should be routed *around*, not despite, the asset.
-
----
-
-## ⚡ Quick start | 一行部署
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stack/main/install/install.sh) \
-  --node-name "US-Resi-01" \
-  --sni addons.mozilla.org \
-  --with-subscription
-```
-
-The quick-start command tracks `main`. Pin a branch or tag for repeatable installs with `ANYREALITY_RESI_STACK_REF=<ref>`.
-
-**中文：** 上面这条命令会在你的 Ubuntu 22.04+ / Debian 12+ 服务器上完成：系统优化（BBR/swap/journald 限额）→ 安装 sing-box（apt 源 + GPG 指纹校验）→ 生成 UUID、Reality 密钥与 AnyTLS 密码 → 配置 **AnyReality（AnyTLS + Reality）入站**（默认；加 `--protocol vless-vision` 可切回遗留 VLESS+Reality）→ 启用 systemd 服务 → 配置 UFW + fail2ban → 安装订阅服务（带流量卡片）→ 安装每日配置备份 timer → 端到端自检。
-
-**English:** This single command performs, on Ubuntu 22.04+ / Debian 12+: system tuning (BBR/swap/journald limits) → sing-box install (apt repo with pinned GPG fingerprint) → UUID / Reality keypair / AnyTLS password generation → **AnyReality (AnyTLS + Reality) inbound configuration** (default; pass `--protocol vless-vision` for legacy VLESS+Reality) → systemd service enablement → UFW + fail2ban → subscription server with usage card → daily systemd-timer backup → end-to-end self-check.
-
-For a dual-node deployment with smart routing, use `--with-aggregator http://<leaf>/<token>/status` plus the residential-node variables documented in [docs/zh-CN/DUAL-NODE.md](docs/zh-CN/DUAL-NODE.md).
-
----
-
-## 🚀 装完之后：三步用起来 | After install: 3 steps to go live
-
-安装脚本结束时会打印一张完成卡，包含：节点名 / 协议 / IP / 端口 / SNI、**AnyReality 客户端凭据**（或遗留模式的 `vless://` 链接）、以及（启用订阅时的）订阅 URL `http://<你的IP>/<SUB_TOKEN>`。
-
-The installer prints a completion card with node / protocol / IP / port / SNI, the **AnyReality client credentials** (or a `vless://` link in legacy mode), and — when the subscription server is enabled — a subscription URL `http://<your-ip>/<SUB_TOKEN>`.
-
-**1. 拿到配置 / Get the config** — 两种方式二选一 / pick one:
-
-```text
-# 方式 A（推荐）：订阅 URL，客户端自动同步 + 流量卡片
-#   AnyReality（默认）→ 用 sing-box 系客户端导入：sing-box 官方 App(SFA/SFI/SFM)、Karing、Hiddify
-#   遗留 vless-vision → 用 Clash 系客户端导入：Clash Verge、mihomo、Stash
-http://<your-ip>/<SUB_TOKEN>/
-
-# 方式 B：手动。AnyReality 完整客户端配置样例（占位值，勿直接用）见：
-examples/single-node/sing-box-client-config.json      # 单节点 AnyReality
-examples/dual-node/sing-box-client-dual.json          # 双节点 AnyReality + 域名分流
-examples/single-node/vless-link.txt                   # 遗留 vless:// 分享链接
-```
-
-**2. 导入客户端 / Import into a client** — 详见 [客户端导入 | Client import](docs/zh-CN/CLIENTS.md)。AnyReality 手动导入字段：`type=anytls`、`server`、`port`、`password`、`tls.server_name=<SNI>`、`utls fingerprint=chrome`、`reality public_key` + `short_id`。
-
-**3. 验证出口 / Verify egress** — 导入的 sing-box 客户端默认在本地 `127.0.0.1:2080` 起一个混合代理，用它确认出口就是你的住宅 IP：
-
-```bash
-# 客户端侧：应返回你 VPS 的住宅 IP / Client side: should print your VPS residential IP
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
-
-# 服务器侧健康检查 / Server-side health check
-curl -fsS http://<your-ip>/healthz          # 订阅服务存活 / subscription liveness
-systemctl status sing-box --no-pager        # 节点服务状态 / node service status
-```
-
-出口 IP 异常、客户端连不上、Telegram 仍然慢？见 [故障排查](docs/zh-CN/TROUBLESHOOTING.md) / [Troubleshooting](docs/en/TROUBLESHOOTING.md)。
+排障：[TROUBLESHOOTING.md](docs/zh-CN/TROUBLESHOOTING.md)。
 
 ---
 
@@ -365,25 +277,7 @@ Client downloads a *single* subscription URL from the aggregator. That URL retur
 
 ---
 
-## ✨ Features | 特性
-
-| Feature | 中文 |
-|---|---|
-| Domain-based smart routing (Telegram → DC, OpenAI → Resi) | 按域名智能分流（TG 走数据中心，OpenAI 走住宅） |
-| AnyTLS + Reality (AnyReality, default) — custom padding, no domain / no TLS cert | AnyTLS + Reality（AnyReality，默认）——自定义填充、无需域名/证书 |
-| Legacy VLESS + Reality + xtls-rprx-vision via `--protocol vless-vision` (Clash-compatible) | 遗留 VLESS + Reality + xtls-rprx-vision，用 `--protocol vless-vision`（兼容 Clash） |
-| Bash installer with `--dry-run`, `--non-interactive`, `--config`, `--protocol` | Bash 模块化安装器，支持 `--dry-run`/`--non-interactive`/`--config`/`--protocol` |
-| Official Sagernet apt source + verified GPG fingerprint | sing-box 官方 apt 源 + GPG 指纹校验 |
-| Custom Python subscription server (zero deps, `Subscription-Userinfo`, `/healthz`) | 自写 Python 订阅服务（零依赖，含流量卡片、健康检查） |
-| Dual-node aggregator with background polling and cache fallback (avoids "0 used" jitter on leaf outage) | 双节点聚合 + 后台轮询 + 缓存回退（leaf 短暂离线不会归零跳变） |
-| Idempotent installer (re-runnable, no double-config drift) | 安装器幂等（重跑不会重复配置） |
-| systemd-timer daily config backup | systemd timer 每日配置备份 |
-| BBR / swap / journald / fail2ban out of the box | BBR / swap / journald 限额 / fail2ban 开箱即用 |
-| Hash-only secret denylist + CI redact gate | 哈希列表 + CI 脱敏门禁，禁止凭证入库 |
-
----
-
-## 📚 Documentation | 文档
+## 文档 | Documentation
 
 | 中文 | English |
 |---|---|
@@ -399,24 +293,17 @@ Client downloads a *single* subscription URL from the aggregator. That URL retur
 | [客户端导入](docs/zh-CN/CLIENTS.md) | [Client import](docs/en/CLIENTS.md) |
 | [同类评分对比](docs/zh-CN/COMPARISON.md) | [Comparison](docs/en/COMPARISON.md) |
 
-For AI search engines and retrieval tools, see [llms.txt](llms.txt). It summarizes the repository purpose, boundaries, docs map, and useful search phrases in a compact machine-readable format.
-
-面向 AI 搜索引擎和检索工具的项目摘要见 [llms.txt](llms.txt)，里面整理了项目用途、边界、文档地图和搜索短语。
+机器可读摘要（GEO / AI 检索）：[llms.txt](llms.txt)。
 
 ---
 
-## 🛡️ Security | 安全
+## 安全 | Security
 
-- All secrets generated per-server; never committed.
-- Repo CI gates on a hash-only denylist + secret-shape detector — no UUID, Reality key, or IP can land in a PR.
-- Pinned GPG fingerprint for the sing-box apt repo. Refuses to install on mismatch.
-- See [SECURITY.md](SECURITY.md) for threat model and reporting.
+- 密钥每机本地生成；CI 哈希 denylist + 形态检测，凭证不得入库
+- sing-box apt 源固定 GPG 指纹，不匹配则拒绝安装
+- 威胁模型与上报：[SECURITY.md](SECURITY.md)
 
-凭证不入库；CI 强制脱敏门禁；sing-box 安装走 GPG 指纹校验。详见 [SECURITY.md](SECURITY.md)。
-
-> ⚠️ **订阅地址就是凭证 / The subscription URL is a credential.** 订阅服务跑在**明文 HTTP :80** 上，`http://<IP>/<SUB_TOKEN>/` 返回的配置里含节点密码 —— 链路上任何人都能读到，拿到 URL 就等于拿到你的节点。**不要**把完整 URL 贴进 issue、截图、聊天群；**不要**把备份文件放进 `FILE_DIR`（同一 token 路径会直接下发）。需要更强保护就在前面加 TLS 反代，或 `scp` 取一次配置后关掉订阅服务。完整说明见 [SECURITY.md](SECURITY.md#subscription-url-exposure--订阅地址的暴露面)。
->
-> The subscription server is plain HTTP on :80 and the profile it returns contains your node password. Anyone who learns the URL has your node. Front it with a TLS reverse proxy, or fetch the profile once over `scp` and disable the server.
+> ⚠️ **订阅 URL = 凭证。** 默认明文 HTTP `:80`，返回配置含节点密码。勿贴 issue/截图/群聊；勿把备份放进 `FILE_DIR`。可加 TLS 反代，或 `scp` 取一次后关订阅。
 
 ---
 

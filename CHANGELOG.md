@@ -10,6 +10,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **README protocol scorecard (China-region best-pick)**: bilingual side-by-side scores with decision tree, explicit weights (last reviewed 2026-08), client matrix, migration steps, boundaries, and upstream-tracking commitment; VLESS path marked stagnant; FAQ/DEPLOYMENT/COMPARISON/llms.txt aligned.
+- **SEO/GEO doc pass**: restructured bilingual README opening (what/why/who, quick start with dry-run, features, use cases, limits, GitHub About/topics); deduped mid-page sections; llms.txt entity card; FAQ one-liners; pyproject description polish.
 
 ## [2.1.0] — 2026-07-28
 
