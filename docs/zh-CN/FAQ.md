@@ -231,7 +231,7 @@ AnyTLS + Reality 是纯 TCP 协议，QUIC 流量没法走节点。不拦的话�
 导入的 sing-box 客户端默认在本地 `127.0.0.1:2080` 起一个混合代理：
 
 ```bash
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com
 ```
 
 返回的应该是你 VPS 的公网 IP。不对的话见 [TROUBLESHOOTING.md](TROUBLESHOOTING.md#出口-ip-不是预期的住宅-ip)。

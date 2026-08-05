@@ -219,6 +219,81 @@ curl --proxy socks5h://127.0.0.1:7891 https://ipinfo.io
 
 ---
 
+## Cloudflare 人机验证一直转圈 / 永远过不去
+
+**先分清两个独立问题，它们的原因完全不同：**
+
+| 症状 | 原因 | 看哪一节 |
+|---|---|---|
+| **经常弹**验证，但点一下能过 | 出口 IP 的 ASN 信誉差（廉价 VPS 段被 CF 判高风险） | 下面「经常弹验证」 |
+| 验证页**一直转圈**、反复要求验证、点了没反应 | 验证控件加载不出来 —— 多半是 IPv6 | 本节下面这段 |
+
+### 一直转圈过不去 → 十有八九是节点没有 IPv6
+
+Cloudflare 的验证控件从 `brunhild.challenges.cloudflare.com` 加载，
+这个域名**长期只有 AAAA 记录、没有 A 记录**（对 1.1.1.1 / 8.8.8.8 / 9.9.9.9 三方核对过）。
+如果节点没有可用的 IPv6 出口，控件的 JS 根本下载不下来，验证自然永远完不成。
+
+这个故障**极难自己联想到**：服务器上唯一的痕迹就是 error 日志里的一行
+
+```
+lookup brunhild.challenges.cloudflare.com: empty result
+```
+
+**先确诊：**
+
+```bash
+# 1) 节点有没有全局 IPv6 地址（0 就是没有）
+ip -6 addr show scope global | grep -c inet6
+
+# 2) 能不能真的走 IPv6 出去
+curl -6 -sS --max-time 8 -o /dev/null -w '%{http_code}\n' https://brunhild.challenges.cloudflare.com/
+
+# 3) 日志里这个域名的报错按天分布（能定位是哪天开始的）
+journalctl -u sing-box --no-pager | grep -c "empty result"
+```
+
+`anyreality-resi-stack-healthcheck` 已经内置这项检查，没有 IPv6 时会直接告警。
+
+**修复，按优先级：**
+
+1. **给 VPS 开 IPv6**（最彻底）。绝大多数厂商免费送 /64，在面板启用后配好网卡即可。
+   开完再跑一次上面第 2 条确认。
+2. 本仓库模板已经为这个域名放开了 IPv6 解析
+   （`templates/singbox/05_dns.json` 里 `challenges.cloudflare.com` → `prefer_ipv4`：
+   有 A 就用 A，只有 AAAA 就用 AAAA）。老节点重装或手工同步这段配置即可。
+   ⚠️ 注意 sing-box 1.12+ 的 `strategy` 属于 **DNS 规则的 `action: route`**，写在 server 里会报
+   `unknown field "strategy"`。
+3. 如果确实拿不到 IPv6：只能接受重验证类站点不可用，或给节点挂一条 IPv6 隧道
+   （WARP / HE.net 之类）再把该域名指过去。
+
+> 客户端模板也做了对应处理：`challenges.cloudflare.com` 在 `action: resolve` **之前**
+> 就被送去节点，避免客户端侧的 `ipv4_only` 把它解析成空结果。改动这段时别调换顺序。
+
+### 经常弹验证（但能过）→ 出口 ASN 信誉问题
+
+和协议、SNI、伪装、客户端**全都无关**，换 AnyReality 或改 SNI 都不会有任何改善。
+先确认出口属于哪个 ASN：
+
+```bash
+curl -sS https://ipinfo.io/org      # 在节点上跑
+dig -x <你的节点IP> +short          # rDNS 常常直接暴露上游机房
+```
+
+如果落在廉价 VPS 转售最集中的那几个 ASN（例如 ColoCrossing 一类），
+CF 会按**概率**下发质询 —— 所以表现是"经常"而不是"总是"。这也是本项目
+推荐**住宅 IP**出口的根本原因：住宅段的信誉分天然就高。
+
+可选缓解：把受影响的域名单独走一个信誉更好的出口（本项目的双节点分流就是干这个的，
+见 [DUAL-NODE.md](DUAL-NODE.md)）。
+
+> ⚠️ **测量陷阱**：用普通 `curl` 测 CF 站点会一律返回 `403`，这是因为 curl 没有浏览器的
+> TLS/HTTP2 指纹、也不执行 JS，**不代表你的 IP 有问题**。要判断 IP 是否真被质询，
+> 必须用带真实指纹的客户端（如 Python 的 `curl_cffi`，`impersonate="chrome131"`），
+> 判据是响应头里的 `cf-mitigated: challenge`。
+
+---
+
 ## 还没解决？
 
 提 issue 时带上：

@@ -56,7 +56,7 @@ What it does: preflight + BBR/swap → sing-box from official apt (GPG-pinned) �
 Import the completion-card subscription URL with a **sing-box client** (SFA/SFI/SFM, Karing, Hiddify, NekoBox), then:
 
 ```bash
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com
 curl -fsS http://<your-ip>/healthz
 systemctl status sing-box --no-pager
 ```
@@ -212,7 +212,7 @@ Padding without REALITY camouflage is not the end state. **AnyReality is the str
 1. Switch clients to a sing-box-family app (table above).
 2. **Re-run the installer** (default AnyReality, or explicit `--protocol anytls-reality`). It swaps inbound templates, mints `ANYTLS_PASSWORD` if needed, and avoids dual inbounds on 443.
 3. **Re-import the subscription** on every client: auth becomes a password; profile becomes `profile.json` (not Clash `profile.yaml`).
-4. Verify: `curl -x socks5h://127.0.0.1:2080 https://api.ipify.org` should print the node egress IP.
+4. Verify: `curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com` should print the node egress IP.
 
 Details: [deployment · protocol choice](docs/en/DEPLOYMENT.md#protocol-choice-anyreality-default-vs-vless-vision-legacy) · [troubleshooting](docs/en/TROUBLESHOOTING.md).
 

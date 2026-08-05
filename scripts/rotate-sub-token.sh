@@ -136,7 +136,7 @@ fi
 rm -f "${SECRETS}.bak" "${ENV_FILE}.bak"
 
 server_ip="$(awk -F= '/^SERVER_IP=/ {print $2}' "$SECRETS" 2>/dev/null | tail -1)"
-server_ip="${server_ip:-$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || echo "<server-ip>")}"
+server_ip="${server_ip:-$(curl -fsS --max-time 5 https://checkip.amazonaws.com 2>/dev/null || echo "<server-ip>")}"
 
 echo
 echo "Subscription token rotated for $unit."

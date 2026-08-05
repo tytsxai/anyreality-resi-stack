@@ -176,7 +176,7 @@ curl -sI http://<your-ip>/<SUB_TOKEN>/ | grep -i subscription-userinfo
 journalctl -u sing-box -n 100 --no-pager
 
 # Client side: the imported sing-box client opens a local mixed proxy on 2080
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org        # should print your VPS public IP
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com        # should print your VPS public IP
 curl -x socks5h://127.0.0.1:2080 -s -o /dev/null -w '%{http_code}\n' https://chat.openai.com
 ```
 

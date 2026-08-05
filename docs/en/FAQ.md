@@ -231,7 +231,7 @@ Three ways: test while bypassing the environment proxy, raise the sing-box clien
 The imported sing-box client opens a local mixed proxy on `127.0.0.1:2080`:
 
 ```bash
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com
 ```
 
 It should print your VPS public IP. If it does not, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
