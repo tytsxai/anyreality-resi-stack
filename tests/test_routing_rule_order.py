@@ -1,25 +1,21 @@
-"""Routing rules that are present but silently ineffective.
+"""Rules that are present but silently ineffective, and the layer each fix
+has to live on.
 
-Every assertion here maps to a failure mode where `sing-box check` passes, the
-service is active, the log is clean — and the rule still does nothing. Those are
-invisible to any "is the key present?" test, so each one checks **relative
-order**, which is what actually decides whether a rule fires.
+`sing-box check` passes, the service is active, the log stays clean — and the
+rule still does nothing. Presence tests cannot see any of that, so these
+assertions target the two things that actually decide behaviour: **which layer**
+a rule lives on, and **relative order**.
 
-1. `action: resolve` must precede IP-based rules (`geoip-*` rule sets,
-   `ip_cidr`). Clients send *domains*; sing-box does not resolve them just to
-   evaluate an IP rule, and configuring `route.default_domain_resolver` does
-   NOT change that — it only says *which* resolver to use once something asks.
-   Verified empirically on sing-box 1.13.14: with the resolve rule removed, a
-   `geoip-cn` rule never matched a domain request; re-adding it made the same
-   request match immediately.
+Cloudflare's challenge widget loads from `brunhild.challenges.cloudflare.com`,
+which has had AAAA records only — no A record — for a long time (cross-checked
+against 1.1.1.1 / 8.8.8.8 / 9.9.9.9). Under a global `ipv4_only` strategy it
+resolves to nothing and CAPTCHA pages spin forever.
 
-2. `challenges.cloudflare.com` must be routed to the node *before* the resolve
-   rule. Cloudflare serves its challenge widget from an AAAA-only host
-   (`brunhild.challenges.cloudflare.com`); under the client's `ipv4_only`
-   strategy, resolving it yields an empty result and the CAPTCHA page spins
-   forever. Sending it upstream by domain avoids resolving it client-side.
-
-3. The server DNS config must exempt that same suffix from `ipv4_only`.
+That fix must live in the **DNS section**. In TUN mode — the mode this project
+recommends — the application resolves the name before it ever opens a socket,
+so a route rule never gets a say: the lookup already came back empty. The route
+rule is kept as well because pinning the destination to the node is cheap and
+unambiguous, but the DNS exemption is the one doing the work.
 """
 
 from __future__ import annotations
@@ -35,6 +31,7 @@ CLIENT_TEMPLATES = [
     REPO_ROOT / "templates" / "singbox-client" / "client-dual.json.tmpl",
 ]
 SERVER_DNS = REPO_ROOT / "templates" / "singbox" / "05_dns.json"
+SERVER_ROUTE = REPO_ROOT / "templates" / "singbox" / "03_route.json"
 CF_CHALLENGE_SUFFIX = "challenges.cloudflare.com"
 
 
@@ -46,46 +43,57 @@ def render(path: Path) -> dict:
     return json.loads(text)
 
 
+def cf_rule(rules: list[dict]) -> dict | None:
+    return next(
+        (r for r in rules if CF_CHALLENGE_SUFFIX in str(r.get("domain_suffix", ""))), None
+    )
+
+
 def first_index(rules: list[dict], predicate) -> int | None:
     return next((i for i, r in enumerate(rules) if predicate(r)), None)
 
 
-class ClientRuleOrderTest(unittest.TestCase):
+class ClientDnsTest(unittest.TestCase):
+    """The DNS layer is where the AAAA-only host actually has to be handled."""
+
     def test_templates_are_valid_json(self) -> None:
         for path in CLIENT_TEMPLATES:
             with self.subTest(template=path.name):
                 self.assertIsInstance(render(path), dict)
 
-    def test_resolve_precedes_ip_based_rules(self) -> None:
-        """Without this, geoip-cn / ip_cidr rules never match domain traffic."""
+    def test_cf_challenge_exempt_from_ipv4_only(self) -> None:
         for path in CLIENT_TEMPLATES:
             with self.subTest(template=path.name):
-                rules = render(path)["route"]["rules"]
-                resolve_at = first_index(rules, lambda r: r.get("action") == "resolve")
+                dns = render(path)["dns"]
+                self.assertEqual(
+                    dns.get("strategy"),
+                    "ipv4_only",
+                    "global strategy changed — re-check whether the exemption is still needed",
+                )
+                rule = cf_rule(dns.get("rules", []))
                 self.assertIsNotNone(
-                    resolve_at,
-                    f"{path.name}: no 'action: resolve' rule — every IP-based rule "
-                    "below it silently never matches domain traffic",
+                    rule,
+                    f"{path.name}: global DNS strategy is ipv4_only with no exemption for "
+                    f"{CF_CHALLENGE_SUFFIX}. Its widget host is AAAA-only, so in TUN mode the "
+                    "application's own lookup returns empty and the CAPTCHA page spins "
+                    "forever. A route rule cannot save this — DNS has already failed.",
+                )
+                self.assertEqual(
+                    rule.get("strategy"),
+                    "prefer_ipv4",
+                    "must be prefer_ipv4: use A when present, fall back to AAAA",
+                )
+                # sing-box >=1.12 puts `strategy` on the DNS rule's action.
+                self.assertEqual(rule.get("action"), "route")
+                self.assertEqual(
+                    rule.get("server"),
+                    "dns-remote",
+                    "resolve it over the node, not the domestic resolver",
                 )
 
-                def is_ip_rule(r: dict) -> bool:
-                    rs = r.get("rule_set")
-                    rs_names = [rs] if isinstance(rs, str) else (rs or [])
-                    return "ip_cidr" in r or any("geoip" in n for n in rs_names)
 
-                first_ip_rule = first_index(rules, is_ip_rule)
-                if first_ip_rule is None:
-                    self.skipTest("template has no IP-based rules")
-                self.assertLess(
-                    resolve_at,
-                    first_ip_rule,
-                    f"{path.name}: 'action: resolve' is at index {resolve_at} but the "
-                    f"first IP-based rule is at {first_ip_rule}. The IP rule cannot "
-                    "match domain traffic and is effectively dead.",
-                )
-
-    def test_cf_challenge_routed_before_resolve(self) -> None:
-        """AAAA-only host must bypass the client's ipv4_only resolution."""
+class ClientRouteTest(unittest.TestCase):
+    def test_cf_challenge_pinned_to_node_before_resolve(self) -> None:
         for path in CLIENT_TEMPLATES:
             with self.subTest(template=path.name):
                 rules = render(path)["route"]["rules"]
@@ -93,61 +101,102 @@ class ClientRuleOrderTest(unittest.TestCase):
                     rules, lambda r: CF_CHALLENGE_SUFFIX in str(r.get("domain_suffix", ""))
                 )
                 self.assertIsNotNone(
-                    chal_at,
-                    f"{path.name}: no rule for {CF_CHALLENGE_SUFFIX}. Under ipv4_only "
-                    "the CAPTCHA widget resolves to an empty result and the "
-                    "verification page spins forever.",
+                    chal_at, f"{path.name}: no route rule for {CF_CHALLENGE_SUFFIX}"
+                )
+                self.assertNotEqual(
+                    rules[chal_at].get("outbound"),
+                    "direct",
+                    f"{path.name}: {CF_CHALLENGE_SUFFIX} must traverse the node, not go direct",
                 )
                 resolve_at = first_index(rules, lambda r: r.get("action") == "resolve")
                 if resolve_at is not None:
                     self.assertLess(
                         chal_at,
                         resolve_at,
-                        f"{path.name}: the {CF_CHALLENGE_SUFFIX} rule must come before "
-                        "'action: resolve', otherwise it gets resolved under ipv4_only "
-                        "and yields an empty result.",
+                        f"{path.name}: pin {CF_CHALLENGE_SUFFIX} to the node before the resolve "
+                        "rule, so an AAAA result can never be re-judged by the IP rules below",
                     )
 
-    def test_cf_challenge_does_not_go_direct(self) -> None:
-        """Sending it direct defeats the point — it must traverse the node."""
+    def test_resolve_precedes_ip_based_rules(self) -> None:
+        """Without this, `geoip-cn` never matches domain traffic.
+
+        Clients send domains. sing-box does not resolve them just to evaluate an
+        IP-based rule, and `route.default_domain_resolver` does NOT change that —
+        it only decides *which* resolver is used once something asks. Verified on
+        sing-box 1.13.14: with the resolve rule removed a `geoip-cn` rule never
+        fired for a domain request; re-adding it made the same request match.
+
+        Cost was measured, not assumed. First contact with uncached foreign
+        domains, from China through a US node, two clients running concurrently
+        and alternating request order to cancel out ordering bias:
+        without resolve 0.699 s, with resolve 0.681 s — 0.97x, i.e. no difference.
+        (An earlier sequential A-then-B run suggested 2.7x; that was
+        trans-Pacific jitter being misread as a config difference. Do not
+        re-litigate this with a sequential benchmark.)
+
+        In TUN mode the destination is already an IP by the time routing runs, so
+        the rule is simply inert there — harmless, and it keeps SOCKS users from
+        detouring domestic traffic abroad.
+        """
         for path in CLIENT_TEMPLATES:
             with self.subTest(template=path.name):
-                for rule in render(path)["route"]["rules"]:
-                    if CF_CHALLENGE_SUFFIX in str(rule.get("domain_suffix", "")):
-                        self.assertNotEqual(
-                            rule.get("outbound"),
-                            "direct",
-                            f"{path.name}: {CF_CHALLENGE_SUFFIX} must go through the "
-                            "node, not direct",
-                        )
+                rules = render(path)["route"]["rules"]
+                resolve_at = first_index(rules, lambda r: r.get("action") == "resolve")
+                self.assertIsNotNone(
+                    resolve_at,
+                    f"{path.name}: no 'action: resolve' rule — every IP-based rule below it "
+                    "silently never matches domain traffic",
+                )
+
+                def is_ip_rule(r: dict) -> bool:
+                    rs = r.get("rule_set")
+                    names = [rs] if isinstance(rs, str) else (rs or [])
+                    return "ip_cidr" in r or any("geoip" in n for n in names)
+
+                first_ip = first_index(rules, is_ip_rule)
+                if first_ip is None:
+                    self.skipTest("template has no IP-based rules")
+                self.assertLess(
+                    resolve_at,
+                    first_ip,
+                    f"{path.name}: 'action: resolve' is at {resolve_at} but the first IP-based "
+                    f"rule is at {first_ip}; that rule cannot match domain traffic and is dead.",
+                )
 
 
-class ServerDnsTest(unittest.TestCase):
+class ServerTest(unittest.TestCase):
     def test_cf_challenge_exempt_from_ipv4_only(self) -> None:
         dns = json.loads(SERVER_DNS.read_text(encoding="utf-8"))["dns"]
-        self.assertEqual(
-            dns.get("strategy"),
-            "ipv4_only",
-            "global strategy changed; re-check whether the exemption below is still needed",
-        )
-        rules = dns.get("rules", [])
-        match = next(
-            (r for r in rules if CF_CHALLENGE_SUFFIX in str(r.get("domain_suffix", ""))),
-            None,
-        )
+        self.assertEqual(dns.get("strategy"), "ipv4_only")
+        rule = cf_rule(dns.get("rules", []))
         self.assertIsNotNone(
-            match,
-            f"{SERVER_DNS.name}: global strategy is ipv4_only but there is no "
-            f"exemption for {CF_CHALLENGE_SUFFIX}, whose widget host is AAAA-only. "
-            "CAPTCHA pages will never complete.",
+            rule,
+            f"{SERVER_DNS.name}: no exemption for {CF_CHALLENGE_SUFFIX}, whose widget host is "
+            "AAAA-only. The node resolves it to nothing and CAPTCHAs never complete.",
         )
-        self.assertEqual(
-            match.get("strategy"),
-            "prefer_ipv4",
-            "exemption must be prefer_ipv4: use A when present, fall back to AAAA",
-        )
-        # sing-box >=1.12 puts `strategy` on the DNS rule's action, not the server.
-        self.assertEqual(match.get("action"), "route")
+        self.assertEqual(rule.get("strategy"), "prefer_ipv4")
+        self.assertEqual(rule.get("action"), "route")
+
+    def test_server_route_has_no_dead_resolve(self) -> None:
+        """A resolve rule on the server cannot do anything — there are no IP rules.
+
+        One shipped from v1.0.0 targeting `api.openai.com`, but the server's rule
+        list ended right after it with `final: direct`, so nothing ever consumed
+        the resolved address. `api.openai.com` also publishes A records, so the
+        `prefer_ipv4` fallback it implied never applied either. Dead config that
+        reads as intentional is exactly the kind of thing that misleads the next
+        maintainer.
+        """
+        rules = json.loads(SERVER_ROUTE.read_text(encoding="utf-8"))["route"]["rules"]
+        has_ip_rule = any("ip_cidr" in r or "geoip" in str(r.get("rule_set", "")) for r in rules)
+        resolves = [i for i, r in enumerate(rules) if r.get("action") == "resolve"]
+        if not has_ip_rule:
+            self.assertEqual(
+                resolves,
+                [],
+                "server route has no IP-based rules, so 'action: resolve' at "
+                f"{resolves} cannot affect any routing decision — dead config",
+            )
 
 
 if __name__ == "__main__":

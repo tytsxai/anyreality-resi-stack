@@ -272,9 +272,13 @@ IPv6 egress is missing.
 3. If IPv6 is truly unavailable: either accept that CAPTCHA-heavy sites are
    unusable, or attach an IPv6 tunnel (WARP, HE.net, …) and point this host at it.
 
-> The client templates handle this too: `challenges.cloudflare.com` is sent to
-> the node **before** the `action: resolve` rule, so the client's own
-> `ipv4_only` strategy can't turn it into an empty result. Don't reorder those.
+> **On the client the fix has to live in the DNS section, not in routing.** In
+> TUN mode — what this project recommends — the application resolves the name
+> *before* opening a socket, so under `ipv4_only` the lookup has already come
+> back empty and no route rule ever gets a say. The client templates therefore
+> give the suffix its own `prefer_ipv4` entry in `dns.rules` (resolved over the
+> node). The route rule pinning it to the node is kept as well — it costs
+> nothing and states the intent. Don't drop either one.
 
 ### Frequent CAPTCHAs (that you can pass) → exit ASN reputation
 

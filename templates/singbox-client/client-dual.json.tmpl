@@ -24,6 +24,12 @@
     ],
     "rules": [
       {
+        "domain_suffix": ["challenges.cloudflare.com"],
+        "action": "route",
+        "server": "dns-remote",
+        "strategy": "prefer_ipv4"
+      },
+      {
         "rule_set": "geosite-category-ads-all",
         "action": "reject"
       },

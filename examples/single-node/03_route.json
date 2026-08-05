@@ -1,12 +1,7 @@
 {
   "route": {
     "rules": [
-      { "action": "sniff" },
-      {
-        "action": "resolve",
-        "domain": ["api.openai.com"],
-        "strategy": "prefer_ipv4"
-      }
+      { "action": "sniff" }
     ],
     "final": "direct"
   }
