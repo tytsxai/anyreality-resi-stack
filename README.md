@@ -57,7 +57,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/tytsxai/anyreality-resi-stac
 装完用完成卡上的订阅 URL（`http://<IP>/<TOKEN>/`）导入 **sing-box 系客户端**（SFA/SFI/SFM、Karing、Hiddify、NekoBox），再验证：
 
 ```bash
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org   # 客户端侧，应等于 VPS 出口
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com   # 客户端侧，应等于 VPS 出口
 curl -fsS http://<your-ip>/healthz                        # 订阅存活
 systemctl status sing-box --no-pager
 ```
@@ -205,7 +205,7 @@ AI 检索摘要：[llms.txt](llms.txt) · 文档索引：[docs/README.md](docs/R
 1. 客户端换成 sing-box 系（见上表）。
 2. 在服务器**重跑安装器**（默认同 AnyReality；或显式 `--protocol anytls-reality`）。安装器会换入站模板、必要时补 `ANYTLS_PASSWORD`，并避免双入站抢 443。
 3. **客户端必须重新导入**订阅：认证从 UUID/flow 变成密码，默认 profile 从 `profile.yaml` 变成 `profile.json`。
-4. 验证：`curl -x socks5h://127.0.0.1:2080 https://api.ipify.org` 应返回节点出口 IP。
+4. 验证：`curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com` 应返回节点出口 IP。
 
 详情：[部署指南 · 协议选择](docs/zh-CN/DEPLOYMENT.md#协议选择anyreality默认vs-vless-vision遗留) · [故障排查](docs/zh-CN/TROUBLESHOOTING.md)。
 
@@ -235,7 +235,7 @@ AI 检索摘要：[llms.txt](llms.txt) · 文档索引：[docs/README.md](docs/R
 
 1. **拿配置**：优先订阅 URL（默认返回 sing-box `profile.json`）；占位样例见 `examples/single-node/sing-box-client-config.json`、`examples/dual-node/sing-box-client-dual.json`。
 2. **导入客户端**：[CLIENTS.md](docs/zh-CN/CLIENTS.md)。手动字段：`type=anytls`、`server`、`port`、`password`、`tls.server_name`、`utls fingerprint=chrome`、`reality public_key` + `short_id`。
-3. **验证**：客户端 `curl -x socks5h://127.0.0.1:2080 https://api.ipify.org`；服务器 `curl -fsS http://<ip>/healthz`、`systemctl status sing-box`。
+3. **验证**：客户端 `curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com`；服务器 `curl -fsS http://<ip>/healthz`、`systemctl status sing-box`。
 
 排障：[TROUBLESHOOTING.md](docs/zh-CN/TROUBLESHOOTING.md)。
 

@@ -195,6 +195,8 @@
         "outbound": "direct"
       },
       { "rule_set": "geosite-cn", "outbound": "direct" },
+      { "domain_suffix": ["challenges.cloudflare.com"], "outbound": "Example-Resi-01" },
+      { "action": "resolve", "strategy": "ipv4_only" },
       { "rule_set": "geoip-cn", "outbound": "direct" },
       {
         "domain_suffix": [

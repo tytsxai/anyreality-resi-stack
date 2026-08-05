@@ -349,13 +349,24 @@ fi
 # A single lookup endpoint is a single point of install failure: ipify is
 # blocked or rate-limited often enough that installs on fresh hosts fail with
 # only a vague warning. Try a few independent providers before giving up.
+#
+# "Independent" means *different hosting providers*, not just different names.
+# The previous list looked like four fallbacks but was effectively one:
+# api.ipify.org, icanhazip.com and ipv4.icanhazip.com all resolve into
+# Cloudflare ranges (and the last two are literally the same service on the
+# same IPs), so a Cloudflare incident took out 3 of 4 at once. Verified
+# 2026-08-06. Keep one entry per hosting provider:
+#   ifconfig.me           -> Google Cloud
+#   checkip.amazonaws.com -> AWS
+#   ident.me              -> Hetzner
+#   api.ipify.org         -> Cloudflare
 detect_public_ip() {
   local url ip
   for url in \
-    https://api.ipify.org \
     https://ifconfig.me/ip \
-    https://icanhazip.com \
-    https://ipv4.icanhazip.com; do
+    https://checkip.amazonaws.com \
+    https://ident.me \
+    https://api.ipify.org; do
     ip="$(curl -fsS --max-time 5 "$url" 2>/dev/null | tr -d '[:space:]')" || ip=""
     if [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
       printf '%s' "$ip"

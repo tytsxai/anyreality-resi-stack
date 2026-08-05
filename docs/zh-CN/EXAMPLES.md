@@ -175,7 +175,7 @@ curl -sI http://<your-ip>/<SUB_TOKEN>/ | grep -i subscription-userinfo
 journalctl -u sing-box -n 100 --no-pager
 
 # 客户端侧：导入的 sing-box 客户端默认在本地 2080 起混合代理
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org        # 应返回你 VPS 的公网 IP
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com        # 应返回你 VPS 的公网 IP
 curl -x socks5h://127.0.0.1:2080 -s -o /dev/null -w '%{http_code}\n' https://chat.openai.com
 ```
 

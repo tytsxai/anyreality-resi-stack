@@ -218,6 +218,91 @@ If the IP returned isn't your residential IP:
 
 ---
 
+## Cloudflare CAPTCHA spins forever / never passes
+
+**These are two independent problems with completely different causes:**
+
+| Symptom | Cause | Section |
+|---|---|---|
+| CAPTCHA appears **often**, but one click gets you through | Poor ASN reputation of the exit IP | "Frequent CAPTCHAs" below |
+| The page **spins forever**, keeps re-challenging, clicking does nothing | The challenge widget cannot load — almost always IPv6 | Right below |
+
+### Spins forever → the node almost certainly has no IPv6
+
+Cloudflare loads its challenge widget from `brunhild.challenges.cloudflare.com`,
+and that host has had **AAAA records only, no A record**, for a long time
+(cross-checked against 1.1.1.1 / 8.8.8.8 / 9.9.9.9). With no usable IPv6 egress
+the widget's JS simply never downloads, so the challenge can never complete.
+
+This one is **very hard to guess**: the only trace on the server is a single
+error-log line:
+
+```
+lookup brunhild.challenges.cloudflare.com: empty result
+```
+
+**Diagnose first:**
+
+```bash
+# 1) Does the node have a global IPv6 address at all? (0 means no)
+ip -6 addr show scope global | grep -c inet6
+
+# 2) Can it actually egress over IPv6?
+curl -6 -sS --max-time 8 -o /dev/null -w '%{http_code}\n' https://brunhild.challenges.cloudflare.com/
+
+# 3) How often has this failed (helps pinpoint when it started)
+journalctl -u sing-box --no-pager | grep -c "empty result"
+```
+
+`anyreality-resi-stack-healthcheck` now performs this check and warns when
+IPv6 egress is missing.
+
+**Fixes, in order of preference:**
+
+1. **Enable IPv6 on the VPS** (the real fix). Nearly every provider hands out a
+   free /64; enable it in the panel and configure the interface. Re-run step 2
+   above to confirm.
+2. This repo's templates already exempt the host from the IPv4-only strategy
+   (`templates/singbox/05_dns.json` routes `challenges.cloudflare.com` with
+   `prefer_ipv4` — use A when present, fall back to AAAA). Reinstall or port
+   that block to existing nodes.
+   ⚠️ In sing-box 1.12+, `strategy` belongs to the **DNS rule's `action: route`**,
+   not to the server object; putting it on the server errors with
+   `unknown field "strategy"`.
+3. If IPv6 is truly unavailable: either accept that CAPTCHA-heavy sites are
+   unusable, or attach an IPv6 tunnel (WARP, HE.net, …) and point this host at it.
+
+> The client templates handle this too: `challenges.cloudflare.com` is sent to
+> the node **before** the `action: resolve` rule, so the client's own
+> `ipv4_only` strategy can't turn it into an empty result. Don't reorder those.
+
+### Frequent CAPTCHAs (that you can pass) → exit ASN reputation
+
+This has **nothing** to do with protocol, SNI, camouflage or client — switching
+to AnyReality or changing the SNI will not help at all. Identify the exit ASN:
+
+```bash
+curl -sS https://ipinfo.io/org      # run on the node
+dig -x <your-node-ip> +short        # rDNS often names the upstream datacenter
+```
+
+If it lands in one of the ASNs dominated by cheap VPS resale, Cloudflare issues
+challenges **probabilistically** — which is why it feels like "often" rather
+than "always". This is precisely why this project favours **residential** exits:
+residential ranges start with a much better reputation.
+
+Mitigation: route the affected domains through a better-reputation exit — that
+is exactly what this project's dual-node split is for, see [DUAL-NODE.md](DUAL-NODE.md).
+
+> ⚠️ **Measurement trap**: plain `curl` against a Cloudflare site returns `403`
+> no matter what, because curl has no browser TLS/HTTP2 fingerprint and runs no
+> JS. **That does not mean your IP is flagged.** To tell whether the IP itself is
+> being challenged, use a client with a real fingerprint (e.g. Python
+> `curl_cffi` with `impersonate="chrome131"`) and look for the
+> `cf-mitigated: challenge` response header.
+
+---
+
 ## Still stuck?
 
 When filing an issue, please include:

@@ -125,7 +125,7 @@ journalctl -u sing-box -f | grep 163.com              # Linux
 tail -f ~/Library/Logs/sing-box.log | grep 163.com    # macOS
 
 # 3. Confirm the proxied egress IP is your node
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com
 ```
 
 ---

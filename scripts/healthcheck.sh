@@ -28,6 +28,11 @@ BACKUP_MAX_AGE_HOURS=48
 DISK_WARN_PCT=80
 DISK_FAIL_PCT=90
 LOG_WARN_MB=50
+# Host that serves Cloudflare's Turnstile/challenge widget. It has had AAAA
+# records only (no A) for a long time — verified against 1.1.1.1 / 8.8.8.8 /
+# 9.9.9.9 — which is why IPv6 egress is not optional if you want CAPTCHAs to
+# be solvable. See the IPv6 check near the end of this script.
+CF_CHALLENGE_HOST=brunhild.challenges.cloudflare.com
 
 QUIET=0
 while [[ $# -gt 0 ]]; do
@@ -231,6 +236,29 @@ if [[ -f "$ETC_DIR/secrets.env" ]]; then
     pass "secrets.env permissions are 600"
   else
     fail "secrets.env is mode ${mode:-unknown}, expected 600 — run: chmod 600 $ETC_DIR/secrets.env"
+  fi
+fi
+
+# Cloudflare's challenge widget loads from an AAAA-only host. A node with no
+# usable IPv6 egress cannot fetch it, and the user-visible symptom is a
+# verification page that spins forever — while the only trace on the server is
+# a single "empty result" line in the error log. That is very hard to connect
+# back to IPv6, so probe it explicitly and name the root cause.
+#
+# This matters most for exactly this project's audience: people routing
+# ChatGPT/Claude/banking through the node are the ones who hit CAPTCHAs.
+if [[ -n "$(command -v ip)" ]]; then
+  v6_global="$(ip -6 addr show scope global 2>/dev/null | grep -c 'inet6' || true)"
+  if [[ "${v6_global:-0}" -eq 0 ]]; then
+    warn "no global IPv6 address — Cloudflare's challenge widget (${CF_CHALLENGE_HOST}) is AAAA-only, so CAPTCHA pages will spin forever. Fix: enable IPv6 on this VPS (most providers offer a free /64). See docs/en/TROUBLESHOOTING.md, section 'Cloudflare CAPTCHA spins forever'"
+  else
+    code="$(curl -6 -s -o /dev/null -w '%{http_code}' --max-time 8 \
+      "https://${CF_CHALLENGE_HOST}/" 2>/dev/null || echo "000")"
+    if [[ "$code" != "000" ]]; then
+      pass "IPv6 egress works — Cloudflare challenge widget is reachable"
+    else
+      warn "have IPv6 address but cannot reach ${CF_CHALLENGE_HOST} over IPv6 — CAPTCHA pages will spin forever. Check IPv6 routing/firewall (ip -6 route, ufw)"
+    fi
   fi
 fi
 

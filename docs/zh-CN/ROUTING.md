@@ -128,7 +128,7 @@ journalctl -u sing-box -f | grep 163.com        # Linux
 tail -f ~/Library/Logs/sing-box.log | grep 163.com   # macOS
 
 # 方法 3：确认出口 IP 是不是你的节点
-curl -x socks5h://127.0.0.1:2080 https://api.ipify.org
+curl -x socks5h://127.0.0.1:2080 https://checkip.amazonaws.com
 ```
 
 ---
