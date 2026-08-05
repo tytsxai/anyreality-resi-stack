@@ -171,10 +171,20 @@ IPV4_RE='([0-9]{1,3}\.){3}[0-9]{1,3}'
 # single-case snake_case instead: a Reality key is 43 random base64url chars,
 # so the odds it lands entirely in [a-z0-9_] (or entirely in [A-Z0-9_]) with
 # well-formed underscores are about 2e-10. Mixed case is still scanned.
+#
+# kebab-case needs the same exemption, and for the same reason: Markdown
+# heading anchors (e.g. '#protocol-choice-anyreality-default-vs-vless') are
+# lowercase-and-hyphens and occasionally land on exactly 43 characters. Since
+# 2026-08-03 that produced 8 permanent violations on main, so the redact CI job
+# had been red for days — which is worse than no check at all, because a real
+# leak would now scroll past in a wall of known-bad output. Odds a random
+# base64url key falls entirely in [a-z0-9-] with well-formed hyphens are
+# ~1e-10, the same order as the snake_case carve-out above.
 is_source_identifier() {
   local s="$1"
   [[ "$s" =~ ^[a-z0-9]+(_[a-z0-9]+)+$ ]] && return 0
   [[ "$s" =~ ^[A-Z0-9]+(_[A-Z0-9]+)+$ ]] && return 0
+  [[ "$s" =~ ^[a-z0-9]+(-+[a-z0-9]+)+$ ]] && return 0
   return 1
 }
 
