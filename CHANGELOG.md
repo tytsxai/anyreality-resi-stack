@@ -7,10 +7,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-> **Routing-correctness release.** Four rules that `sing-box check` accepted, the
-> service ran with, and the log stayed clean about — while doing nothing. Existing
-> nodes should re-run the installer (or port `templates/singbox/05_dns.json` and the
-> client templates by hand) and re-import the client profile.
+> **Routing-correctness release.** A group of rules that `sing-box check`
+> accepted, the service ran with, and the log stayed clean about — while doing
+> nothing. Existing nodes should re-run the installer (or port
+> `templates/singbox/05_dns.json` and the client templates by hand) and re-import
+> the client profile.
 
 ### Fixed
 
@@ -23,27 +24,43 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   `lookup … : empty result` line in the error log as the only clue. This is the worst
   possible failure for this project's audience, since routing ChatGPT/Claude/banking
   through the node is exactly what puts you in front of CAPTCHAs.
-  `templates/singbox/05_dns.json` now routes the suffix with `prefer_ipv4` (use A when
-  present, fall back to AAAA), and the client templates send it upstream by domain
-  *before* the resolve rule so the client's own `ipv4_only` can't blank it out.
-  Note that on a node with **no IPv6 egress at all** this still cannot work — the
-  health check now says so explicitly instead of leaving you to guess.
+
+  The exemption has to live in the **DNS layer** on both sides. In TUN mode — the
+  mode this project recommends — the application resolves the hostname before it
+  ever opens a socket, so a routing rule never gets a say: the lookup has already
+  come back empty. `templates/singbox/05_dns.json` and both client templates now
+  route the suffix with `prefer_ipv4` (use A when present, fall back to AAAA). The
+  client route rule pinning it to the node is kept as well — it costs nothing and
+  states the intent.
+
+  On a node with **no IPv6 egress at all** this still cannot work; the health check
+  now says so explicitly instead of leaving you to guess.
+
 - **`geoip-cn` never matched domain traffic in the client profiles.** Clients send
   domains; sing-box does not resolve them just to evaluate an IP-based rule, and
   setting `route.default_domain_resolver` does **not** change that — it only decides
   *which* resolver is used once something asks. Verified empirically on sing-box
   1.13.14: with no `action: resolve` ahead of it, a `geoip-cn` rule never fired for a
   domain request; adding one made the same request match immediately. Domestic sites
-  that are absent from `geosite-cn` were therefore detouring abroad. Both client
-  templates now run `action: resolve` before the IP-based rules. Resolution still
-  follows the DNS rules (confirmed by pointing a test domain at a blackhole resolver),
-  so domestic names keep using the domestic resolver and foreign names are still
-  resolved over the node — no poisoning is introduced.
+  absent from `geosite-cn` were therefore detouring abroad. Both client templates now
+  run `action: resolve` before the IP-based rules. Resolution still follows the DNS
+  rules — confirmed by pointing a test domain at a blackhole resolver — so domestic
+  names keep the domestic resolver and foreign names stay resolved over the node. No
+  poisoning is introduced.
+
+- **Removed a dead `action: resolve` from the server route template.** It shipped
+  from v1.0.0 targeting `api.openai.com`, but the server's rule list ends right after
+  it with `final: direct` — nothing ever consumed the resolved address, so it could
+  not influence any routing decision. `api.openai.com` also publishes A records, so
+  the `prefer_ipv4` fallback it implied never applied either. Dead config that reads
+  as deliberate is exactly what misleads the next maintainer.
+
 - **The "four independent providers" public-IP detection was effectively one.**
   `api.ipify.org`, `icanhazip.com` and `ipv4.icanhazip.com` all resolve into
   Cloudflare ranges — and the last two are the same service on the same addresses —
   so a Cloudflare incident took out three of the four fallbacks simultaneously. The
   list is now one entry per hosting provider: Google Cloud, AWS, Hetzner, Cloudflare.
+
 - **`make redact` had been failing on `main` since 2026-08-03.** The 43-char
   base64url shape check exempted `snake_case` identifiers but not `kebab-case`, so
   Markdown heading anchors that happen to be exactly 43 characters were reported as
@@ -58,10 +75,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Health check probes IPv6 egress and names the consequence: without it, Cloudflare's
   AAAA-only challenge widget cannot load and CAPTCHA pages spin forever. Warns rather
   than fails, since a node without IPv6 is otherwise fine.
-- `tests/test_routing_rule_order.py` asserts **relative rule order**, not mere
-  presence — the only thing that distinguishes a working rule from a dead one here.
-  Covers: resolve-before-IP-rules, CF-challenge-before-resolve, CF-challenge-not-direct,
-  and the server DNS exemption. Each assertion was verified by fault injection to fail
+- `tests/test_routing_rule_order.py` asserts **which layer a fix lives on** and
+  **relative rule order** — the only things that distinguish a working rule from a
+  dead one here. Covers the client and server DNS exemptions, CF-challenge pinned to
+  the node ahead of the resolve rule, resolve-before-IP-rules, and the absence of a
+  dead resolve on the server. Every assertion was fault-injected to confirm it fails
   when the corresponding fix is reverted.
 - `docs/zh-CN/TROUBLESHOOTING.md` / `docs/en/TROUBLESHOOTING.md`: a Cloudflare CAPTCHA
   section that separates the two independent problems people conflate — *appears often*
@@ -75,6 +93,21 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   `api.ipify.org`. The latter is Cloudflare-hosted, so it reports misleading results
   the moment any Cloudflare-related split routing is in play, and this project already
   documented it as frequently blocked or rate-limited.
+
+### Notes
+
+- The client-side `action: resolve` rule was briefly measured as a 2.7x slowdown for
+  first contact with foreign domains and nearly reverted. That number came from running
+  the two configurations **sequentially**, which on a trans-Pacific link measures jitter,
+  not configuration. Re-measured with both clients running **concurrently** and
+  alternating request order: 0.699 s without vs 0.681 s with — 0.97x, i.e. no
+  difference. The rule stays. The rationale and the measurement are recorded in
+  `tests/test_routing_rule_order.py` so this is not re-litigated with another
+  sequential benchmark.
+- The Clash templates were reviewed and deliberately left unchanged.
+  `GEOIP,CN,DIRECT,no-resolve` already states the same trade-off explicitly, and domain
+  traffic is handed to the proxy by name for the server to resolve — so `ipv6: false`
+  does not strand the challenge widget there.
 
 ## [2.1.1] — 2026-08-03
 
